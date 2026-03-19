@@ -326,15 +326,35 @@
   flex-wrap: wrap;
 }
 
+/* TABLET */
 @media (max-width: 1100px) {
   .contentGrid {
     grid-template-columns: 1fr;
   }
 }
 
+@media (max-width: 900px) {
+  .preparationCardHeader {
+    flex-direction: column;
+  }
+
+  .recipeBadge {
+    align-self: flex-start;
+  }
+}
+
+/* MOBILE */
 @media (max-width: 720px) {
   .pageHeader {
     flex-direction: column;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .description {
+    font-size: 0.94rem;
   }
 
   .stats {
@@ -343,9 +363,53 @@
 
   .statCard {
     flex: 1;
+    min-width: 100%;
+  }
+
+  .panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .actions,
+  .cardActions {
+    flex-direction: column;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .warningButton,
+  .dangerButton,
+  .linkButton {
+    width: 100%;
+  }
+
+  .preparationCard {
+    padding: 16px;
+    border-radius: 16px;
   }
 
   .preparationCardHeader {
     flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .recipeBadge {
+    align-self: flex-start;
+  }
+
+  .emptyState {
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  .emptyState p {
+    font-size: 0.92rem;
+  }
+
+  .infoBox {
+    padding: 14px;
+    font-size: 0.9rem;
   }
 }

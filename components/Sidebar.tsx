@@ -13,7 +13,11 @@ const menuItems = [
   { href: "/historico-romaneios", label: "Histórico de Romaneios" },
 ];
 
-export default function Sidebar() {
+type SidebarProps = {
+  onNavigate?: () => void;
+};
+
+export default function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -26,7 +30,10 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`sidebar__link ${isActive ? "sidebar__link--active" : ""}`}
+              onClick={onNavigate}
+              className={`sidebar__link ${
+                isActive ? "sidebar__link--active" : ""
+              }`}
             >
               {item.label}
             </Link>

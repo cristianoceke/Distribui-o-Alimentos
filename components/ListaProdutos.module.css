@@ -124,8 +124,61 @@
   filter: brightness(0.98);
 }
 
-@media (max-width: 720px) {
+/* TABLET */
+@media (max-width: 900px) {
   .productCardHeader {
     flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .categoryBadge {
+    align-self: flex-start;
+  }
+}
+
+/* MOBILE */
+@media (max-width: 720px) {
+  .productCard {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .productCardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .productName {
+    font-size: 1rem;
+  }
+
+  .productMeta {
+    font-size: 0.9rem;
+  }
+
+  .cardActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .secondaryButton,
+  .warningButton,
+  .dangerButton {
+    width: 100%;
+    height: 46px;
+  }
+
+  .categoryBadge {
+    align-self: flex-start;
+  }
+
+  .emptyState {
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  .emptyState p {
+    font-size: 0.92rem;
   }
 }

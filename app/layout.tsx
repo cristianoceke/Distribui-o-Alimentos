@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,26 +29,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body>
-        <div className="app-shell">
-          <header className="topbar">
-            <div className="topbar__content">
-              <div className="brand">
-                <div className="brand__badge" />
-                <div className="brand__text">
-                  <h1>Sistema de Merenda Escolar</h1>
-                  <span>Gestão de escolas, cardápios e romaneios</span>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div className="app-body">
-            <Sidebar />
-            <main className="page-content">
-              <div className="page-container">{children}</div>
-            </main>
-          </div>
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

@@ -196,12 +196,14 @@
 
 .groupOption input {
   accent-color: var(--primary-700);
+  flex-shrink: 0;
 }
 
 .groupOption span {
   font-size: 0.92rem;
   color: var(--gray-700);
   text-transform: capitalize;
+  line-height: 1.4;
 }
 
 .groupOption:hover {
@@ -395,6 +397,7 @@
   font-size: 0.85rem;
   font-weight: 600;
   text-transform: capitalize;
+  line-height: 1.3;
 }
 
 .cardActions {
@@ -403,20 +406,40 @@
   flex-wrap: wrap;
 }
 
+/* TABLET */
 @media (max-width: 1100px) {
   .contentGrid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .groupsGrid,
   .quantityGrid {
     grid-template-columns: 1fr;
   }
 
+  .schoolCardHeader {
+    flex-direction: column;
+  }
+
+  .totalBadge {
+    align-self: flex-start;
+  }
+}
+
+/* MOBILE */
+@media (max-width: 720px) {
   .pageHeader {
     flex-direction: column;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .description {
+    font-size: 0.94rem;
   }
 
   .stats {
@@ -425,9 +448,64 @@
 
   .statCard {
     flex: 1;
+    min-width: 100%;
+  }
+
+  .panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .groupsGrid,
+  .quantityGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .groupOption {
+    min-height: 56px;
+    padding: 0 14px;
+  }
+
+  .groupOption span {
+    font-size: 0.9rem;
+  }
+
+  .actions,
+  .cardActions {
+    flex-direction: column;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .warningButton,
+  .dangerButton {
+    width: 100%;
+  }
+
+  .schoolCard {
+    padding: 16px;
+    border-radius: 16px;
   }
 
   .schoolCardHeader {
     flex-direction: column;
+  }
+
+  .totalBadge {
+    align-self: flex-start;
+  }
+
+  .groupTags {
+    gap: 6px;
+  }
+
+  .groupTag {
+    font-size: 0.82rem;
+  }
+
+  .emptyState,
+  .emptyStateInline {
+    padding: 18px 16px;
+    border-radius: 16px;
   }
 }

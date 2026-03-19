@@ -242,12 +242,14 @@
   filter: brightness(0.97);
 }
 
+/* TABLET */
 @media (max-width: 1100px) {
   .contentGrid {
     grid-template-columns: 1fr;
   }
 }
 
+/* MOBILE */
 @media (max-width: 720px) {
   .fieldGrid {
     grid-template-columns: 1fr;
@@ -263,5 +265,27 @@
 
   .statCard {
     flex: 1;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .primaryButton,
+  .warningButton {
+    width: 100%;
+  }
+
+  .panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .description {
+    font-size: 0.94rem;
   }
 }

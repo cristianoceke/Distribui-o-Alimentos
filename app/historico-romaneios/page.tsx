@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { RomaneioGerado } from "@/types/romaneio";
+import Link from "next/link";
 
 export default function HistoricoRomaneiosPage() {
   const [romaneios, setRomaneios] = useState<RomaneioGerado[]>([]);
@@ -43,7 +44,9 @@ export default function HistoricoRomaneiosPage() {
                 ))}
               </ul>
 
-              <button type="button">Reimprimir</button>
+              <Link href={`/historico-romaneios/${index}`}>
+                Reimprimir
+              </Link>
             </div>
           ))}
         </div>

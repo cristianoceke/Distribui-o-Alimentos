@@ -385,21 +385,14 @@
   white-space: nowrap;
 }
 
+/* TABLET */
 @media (max-width: 1100px) {
   .contentGrid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 720px) {
-  .fieldGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .pageHeader {
-    flex-direction: column;
-  }
-
+@media (max-width: 900px) {
   .heroCard {
     flex-direction: column;
     align-items: flex-start;
@@ -409,11 +402,92 @@
     flex-direction: column;
   }
 
-  .footerActions {
-    justify-content: stretch;
+  .unitBadge {
+    align-self: flex-start;
+  }
+}
+
+/* MOBILE */
+@media (max-width: 720px) {
+  .pageHeader {
+    flex-direction: column;
   }
 
-  .saveRecipeButton {
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .description {
+    font-size: 0.94rem;
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .heroCard {
+    padding: 18px;
+    border-radius: 18px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .heroTitle {
+    font-size: 1.4rem;
+  }
+
+  .heroStats {
     width: 100%;
+  }
+
+  .heroStat {
+    width: 100%;
+  }
+
+  .actions,
+  .cardActions {
+    flex-direction: column;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .warningButton,
+  .dangerButton,
+  .saveRecipeButton,
+  .backButton {
+    width: 100%;
+  }
+
+  .ingredientCard {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .ingredientCardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .unitBadge {
+    align-self: flex-start;
+  }
+
+  .emptyState {
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  .emptyState p {
+    font-size: 0.92rem;
+  }
+
+  .footerActions {
+    justify-content: stretch;
   }
 }
