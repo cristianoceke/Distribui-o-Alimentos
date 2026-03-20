@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { RomaneioGerado } from "@/types/romaneio";
 import Link from "next/link";
+import type { RomaneioGerado } from "@/types/romaneio";
 
 export default function HistoricoRomaneiosPage() {
   const [romaneios, setRomaneios] = useState<RomaneioGerado[]>([]);
@@ -19,10 +19,30 @@ export default function HistoricoRomaneiosPage() {
     }
   }, []);
 
+  function formatarData(dataIso: string) {
+    const data = new Date(dataIso);
+
+    return data.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  function handleExcluirRomaneio(indexParaRemover: number) {
+    const confirmou = window.confirm("Deseja realmente excluir este romaneio?");
+
+    if (!confirmou) return;
+
+    const novaLista = romaneios.filter((_, index) => index !== indexParaRemover);
+    setRomaneios(novaLista);
+    localStorage.setItem("romaneios", JSON.stringify(novaLista));
+  }
+
   return (
     <main>
       <h1>Histórico de Romaneios</h1>
-      <p>Aqui vamos consultar os romaneios já gerados.</p>
+      <p>Aqui ficam os romaneios já gerados.</p>
 
       {romaneios.length === 0 ? (
         <p>Nenhum romaneio gerado ainda.</p>
@@ -30,23 +50,29 @@ export default function HistoricoRomaneiosPage() {
         <div>
           {romaneios.map((romaneio, index) => (
             <div key={index}>
-              <h3>{romaneio.escola}</h3>
-              <p>Semana: {romaneio.semana}</p>
-              <p>Data de geração: {romaneio.dataGeracao}</p>
-              <p>Total de itens: {romaneio.itens.length}</p>
+              <p>
+                <strong>{romaneio.escola}</strong>
+              </p>
+              <p>{formatarData(romaneio.dataGeracao)}</p>
 
-              <h4>Itens do romaneio</h4>
-              <ul>
-                {romaneio.itens.map((item, itemIndex) => (
-                  <li key={itemIndex}>
-                    {item.produto} - {item.unidade} - {item.quantidade.toFixed(2)}
-                  </li>
-                ))}
-              </ul>
-
-              <Link href={`/historico-romaneios/${index}`}>
-                Reimprimir
-              </Link>
+              <div>
+                <Link
+                  href={`/historico-romaneios/${index}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Abrir
+                </Link>{" "}
+                <Link href={`/romaneio?editar=${index}`}>
+                  Editar
+                </Link>{" "}
+                <button
+                  type="button"
+                  onClick={() => handleExcluirRomaneio(index)}
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           ))}
         </div>

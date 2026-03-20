@@ -2,27 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import type { RomaneioGerado } from "@/types/romaneio";
+import type { PedidoSemanalGerado } from "@/types/pedido-semanal";
 
-export default function RomaneioSalvoPage() {
+export default function PedidoSemanalSalvoPage() {
   const params = useParams();
   const index = Number(Array.isArray(params.index) ? params.index[0] : params.index);
 
-  const [romaneio, setRomaneio] = useState<RomaneioGerado | null>(null);
+  const [pedido, setPedido] = useState<PedidoSemanalGerado | null>(null);
 
   useEffect(() => {
-    const romaneiosSalvos = localStorage.getItem("romaneios");
+    const pedidosSalvos = localStorage.getItem("pedidos-semanais");
 
-    if (!romaneiosSalvos || romaneiosSalvos === "undefined") return;
+    if (!pedidosSalvos || pedidosSalvos === "undefined") return;
 
     try {
-      const lista = JSON.parse(romaneiosSalvos) as RomaneioGerado[];
+      const lista = JSON.parse(pedidosSalvos) as PedidoSemanalGerado[];
 
       if (!Number.isNaN(index) && lista[index]) {
-        setRomaneio(lista[index]);
+        setPedido(lista[index]);
       }
     } catch {
-      setRomaneio(null);
+      setPedido(null);
     }
   }, [index]);
 
@@ -36,11 +36,11 @@ export default function RomaneioSalvoPage() {
     });
   }
 
-  if (!romaneio) {
+  if (!pedido) {
     return (
       <main>
-        <h1>Romaneio não encontrado</h1>
-        <p>Não foi possível localizar esse romaneio.</p>
+        <h1>Pedido não encontrado</h1>
+        <p>Não foi possível localizar esse pedido.</p>
       </main>
     );
   }
@@ -55,14 +55,15 @@ export default function RomaneioSalvoPage() {
 
       <div style={{ border: "1px solid #000", padding: "16px" }}>
         <div style={{ textAlign: "center", marginBottom: "16px" }}>
-          <h1 style={{ margin: 0 }}>MERENDA ESCOLAR</h1>
-          <h2 style={{ margin: "8px 0 0 0" }}>ROMANEIO DE ENTREGA</h2>
+          <h1 style={{ margin: 0 }}>PEDIDO SEMANAL</h1>
+          <h2 style={{ margin: "8px 0 0 0" }}>REDE MUNICIPAL</h2>
         </div>
 
         <div style={{ marginBottom: "16px" }}>
-          <p><strong>Escola:</strong> {romaneio.escola}</p>
-          <p><strong>Semana:</strong> {romaneio.semana}</p>
-          <p><strong>Data de geração:</strong> {formatarData(romaneio.dataGeracao)}</p>
+          <p><strong>Grupo:</strong> {pedido.grupo}</p>
+          <p><strong>Semana:</strong> {pedido.semana}</p>
+          <p><strong>Data de geração:</strong> {formatarData(pedido.dataGeracao)}</p>
+          <p><strong>Total de alunos:</strong> {pedido.totalAlunos}</p>
         </div>
 
         <table
@@ -75,21 +76,18 @@ export default function RomaneioSalvoPage() {
           <thead>
             <tr>
               <th style={{ border: "1px solid #000", padding: "8px" }}>
-                DESCRIÇÃO PRODUTO
+                PRODUTO
               </th>
               <th style={{ border: "1px solid #000", padding: "8px" }}>
                 UNIDADE
               </th>
               <th style={{ border: "1px solid #000", padding: "8px" }}>
-                QUANT.
-              </th>
-              <th style={{ border: "1px solid #000", padding: "8px" }}>
-                QUANT. FORNEC.
+                QUANTIDADE
               </th>
             </tr>
           </thead>
           <tbody>
-            {romaneio.itens.map((item, itemIndex) => (
+            {pedido.itens.map((item, itemIndex) => (
               <tr key={itemIndex}>
                 <td style={{ border: "1px solid #000", padding: "8px" }}>
                   {item.produto}
@@ -100,16 +98,10 @@ export default function RomaneioSalvoPage() {
                 <td style={{ border: "1px solid #000", padding: "8px", textAlign: "center" }}>
                   {item.quantidade.toFixed(2)}
                 </td>
-                <td style={{ border: "1px solid #000", padding: "8px" }}></td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        <div style={{ marginTop: "40px" }}>
-          <p>________________________________________</p>
-          <p>Assinatura / Recebimento</p>
-        </div>
       </div>
     </main>
   );

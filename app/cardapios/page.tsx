@@ -48,6 +48,7 @@ export default function CardapiosPage() {
 
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
+  const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
 
   useEffect(() => {
     const preparacoesSalvas = localStorage.getItem("preparacoes");
@@ -126,9 +127,13 @@ export default function CardapiosPage() {
       return;
     }
 
-    const cardapioDuplicado = cardapios.some(
-      (cardapio) => cardapio.grupo === grupo && cardapio.semana === semana
-    );
+    const cardapioDuplicado = cardapios.some((cardapio, index) => {
+      const mesmoGrupo = cardapio.grupo === grupo;
+      const mesmaSemana = cardapio.semana === semana;
+      const outroCardapio = index !== indiceEditando;
+
+      return mesmoGrupo && mesmaSemana && outroCardapio;
+    });
 
     if (cardapioDuplicado) {
       setErro("Já existe um cardápio cadastrado para esse grupo e semana.");
@@ -141,7 +146,15 @@ export default function CardapiosPage() {
       itens,
     };
 
-    setCardapios([...cardapios, novoCardapio]);
+    let novaLista = [...cardapios];
+
+    if (indiceEditando === null) {
+      novaLista.push(novoCardapio);
+    } else {
+      novaLista[indiceEditando] = novoCardapio;
+    }
+
+    setCardapios(novaLista);
 
     setGrupo("");
     setSemana("");
@@ -149,7 +162,57 @@ export default function CardapiosPage() {
     setDia("");
     setRefeicao("");
     setPreparacao("");
-    setSucesso("Cardápio salvo com sucesso.");
+    setIndiceEditando(null);
+
+    setSucesso(
+      indiceEditando === null
+        ? "Cardápio salvo com sucesso."
+        : "Cardápio editado com sucesso."
+    );
+  }
+
+  function handleEditarCardapio(indexParaEditar: number) {
+    const cardapio = cardapios[indexParaEditar];
+
+    setGrupo(cardapio.grupo);
+    setSemana(cardapio.semana);
+    setItens(cardapio.itens);
+    setIndiceEditando(indexParaEditar);
+
+    limparMensagem();
+    setSucesso("Editando cardápio...");
+  }
+
+  function handleRemoverCardapio(indexParaRemover: number) {
+    const confirmou = window.confirm("Tem certeza que deseja remover este cardápio?");
+    if (!confirmou) return;
+
+    const novaLista = cardapios.filter((_, index) => index !== indexParaRemover);
+    setCardapios(novaLista);
+
+    if (indiceEditando === indexParaRemover) {
+      setGrupo("");
+      setSemana("");
+      setItens([]);
+      setDia("");
+      setRefeicao("");
+      setPreparacao("");
+      setIndiceEditando(null);
+    }
+
+    limparMensagem();
+    setSucesso("Cardápio removido com sucesso.");
+  }
+
+  function handleCancelarEdicao() {
+    setGrupo("");
+    setSemana("");
+    setItens([]);
+    setDia("");
+    setRefeicao("");
+    setPreparacao("");
+    setIndiceEditando(null);
+    limparMensagem();
   }
 
   const totalItensCadastrados = useMemo(() => {
@@ -379,8 +442,18 @@ export default function CardapiosPage() {
                     onClick={handleSalvarCardapio}
                     className={styles.saveButton}
                   >
-                    Salvar cardápio
+                    {indiceEditando === null ? "Salvar cardápio" : "Salvar edição"}
                   </button>
+
+                  {indiceEditando !== null && (
+                    <button
+                      type="button"
+                      onClick={handleCancelarEdicao}
+                      className={styles.primaryButton}
+                    >
+                      Cancelar edição
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -436,6 +509,24 @@ export default function CardapiosPage() {
                       ))}
                     </div>
                   )}
+
+                  <div className={styles.cardActions}>
+                    <button
+                      type="button"
+                      onClick={() => handleEditarCardapio(index)}
+                      className={styles.primaryButton}
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoverCardapio(index)}
+                      className={styles.dangerButton}
+                    >
+                      Remover
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>

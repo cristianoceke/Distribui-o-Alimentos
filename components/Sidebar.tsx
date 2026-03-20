@@ -8,9 +8,11 @@ const menuItems = [
   { href: "/romaneio", label: "Romaneio" },
   { href: "/escolas", label: "Escolas" },
   { href: "/cardapios", label: "Cardápios" },
-  { href: "/pratos", label: "Preparações" },
+  { href: "/pratos", label: "Pratos" },
   { href: "/produtos", label: "Produtos" },
   { href: "/historico-romaneios", label: "Histórico de Romaneios" },
+  { href: "/pedidos-semanais", label: "Pedidos" },
+  { href: "/saldos", label: "Saldo" },
 ];
 
 type SidebarProps = {
