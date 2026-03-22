@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 
@@ -32,7 +33,15 @@ export default function AppShell({ children }: AppShellProps) {
               ☰
             </button>
 
-            <div className="brand__badge" />
+            <div className="brand__badge">
+              <Image
+                src="/logo.png"
+                alt="Lunutrix"
+                width={50}
+                height={44}
+                priority
+              />
+            </div>
 
             <div className="brand__text">
               <h1>Sistema de Merenda Escolar</h1>

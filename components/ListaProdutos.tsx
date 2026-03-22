@@ -6,15 +6,15 @@ import styles from "@/components/ListaProdutos.module.css";
 
 type ListaProdutosProps = {
   produtos: Produto[];
-  indiceEditando: number | null;
-  onRemoverProduto: (index: number) => void;
-  onEditarProduto: (index: number) => void;
+  produtoEditandoId: string | null;
+  onRemoverProduto: (produtoId: string) => void;
+  onEditarProduto: (produtoId: string) => void;
   onCancelarEdicao: () => void;
 };
 
 export default function ListaProdutos({
   produtos,
-  indiceEditando,
+  produtoEditandoId,
   onRemoverProduto,
   onEditarProduto,
   onCancelarEdicao,
@@ -30,12 +30,13 @@ export default function ListaProdutos({
 
   return (
     <div className={styles.productList}>
-      {produtos.map((produto, index) => {
-        const estaEditando = indiceEditando === index;
+      {produtos.map((produto) => {
+        const produtoId = produto.id ?? produto.nome;
+        const estaEditando = produtoEditandoId === produtoId;
 
         return (
           <article
-            key={index}
+            key={produtoId}
             className={`${styles.productCard} ${
               estaEditando ? styles.productCardEditing : ""
             }`}
@@ -60,7 +61,7 @@ export default function ListaProdutos({
             <div className={styles.cardActions}>
               <button
                 type="button"
-                onClick={() => onEditarProduto(index)}
+                onClick={() => onEditarProduto(produtoId)}
                 className={styles.secondaryButton}
               >
                 <Pencil size={18} />
@@ -86,7 +87,7 @@ export default function ListaProdutos({
                   );
 
                   if (confirmou) {
-                    onRemoverProduto(index);
+                    onRemoverProduto(produtoId);
                   }
                 }}
                 className={styles.dangerButton}

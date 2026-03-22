@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -12,11 +12,9 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import styles from "./receita.module.css";
-
-type ProdutoReceita = {
-  nome: string;
-  unidade: string;
-};
+import type { Preparacao } from "@/types/preparacao";
+import type { Produto } from "@/types/produto";
+import { readStorage, useHydrated } from "@/utils/storage";
 
 type IngredienteReceita = {
   produto: string;
@@ -27,43 +25,27 @@ type IngredienteReceita = {
 export default function ReceitaPreparacaoPage() {
   const params = useParams();
   const index = params.index;
+  const indiceNumero = Number(Array.isArray(index) ? index[0] : index);
+  const preparacoes = readStorage<Preparacao[]>("preparacoes", []);
+  const preparacaoAtual =
+    !Number.isNaN(indiceNumero) ? preparacoes[indiceNumero] : undefined;
 
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
   const [quantidade, setQuantidade] = useState("");
-  const [ingredientes, setIngredientes] = useState<IngredienteReceita[]>([]);
+  const [ingredientes, setIngredientes] = useState<IngredienteReceita[]>(
+    Array.isArray(preparacaoAtual?.ingredientes)
+      ? preparacaoAtual.ingredientes.map((ingrediente) => ({
+          ...ingrediente,
+          quantidade: String(ingrediente.quantidade),
+        }))
+      : []
+  );
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
-  const [produtos, setProdutos] = useState<ProdutoReceita[]>([]);
+  const [produtos] = useState<Produto[]>(() => readStorage<Produto[]>("produtos", []));
   const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
-  const [nomePreparacao, setNomePreparacao] = useState("");
-
-  useEffect(() => {
-    const produtosSalvos = localStorage.getItem("produtos");
-
-    if (produtosSalvos) {
-      setProdutos(JSON.parse(produtosSalvos));
-    }
-  }, []);
-
-  useEffect(() => {
-    const preparacoesSalvas = localStorage.getItem("preparacoes");
-    if (!preparacoesSalvas) return;
-
-    const listaPreparacoes = JSON.parse(preparacoesSalvas);
-    const indiceNumero = Number(Array.isArray(index) ? index[0] : index);
-
-    if (Number.isNaN(indiceNumero) || !listaPreparacoes[indiceNumero]) return;
-
-    setNomePreparacao(listaPreparacoes[indiceNumero].nome);
-
-    const ingredientesSalvos = listaPreparacoes[indiceNumero].ingredientes;
-
-    if (Array.isArray(ingredientesSalvos)) {
-      setIngredientes(ingredientesSalvos);
-    } else {
-      setIngredientes([]);
-    }
-  }, [index]);
+  const [nomePreparacao] = useState(preparacaoAtual?.nome ?? "");
+  const hydrated = useHydrated();
 
   function limparFormulario() {
     setProdutoSelecionado("");
@@ -146,24 +128,20 @@ export default function ReceitaPreparacaoPage() {
   }
 
   function handleSalvarReceita() {
-    const preparacoesSalvas = localStorage.getItem("preparacoes");
-
-    if (!preparacoesSalvas) {
+    if (!preparacoes[indiceNumero]) {
       setErro("Nenhuma preparação encontrada para salvar a receita.");
       setSucesso("");
       return;
     }
 
-    const listaPreparacoes = JSON.parse(preparacoesSalvas);
-    const indiceNumero = Number(Array.isArray(index) ? index[0] : index);
+    const listaPreparacoes = [...preparacoes];
 
-    if (Number.isNaN(indiceNumero) || !listaPreparacoes[indiceNumero]) {
-      setErro("Preparação não encontrada.");
-      setSucesso("");
-      return;
-    }
-
-    listaPreparacoes[indiceNumero].ingredientes = ingredientes;
+    listaPreparacoes[indiceNumero].ingredientes = ingredientes.map(
+      (ingrediente) => ({
+        ...ingrediente,
+        quantidade: Number(ingrediente.quantidade),
+      })
+    );
     localStorage.setItem("preparacoes", JSON.stringify(listaPreparacoes));
 
     setProdutoSelecionado("");
@@ -181,6 +159,10 @@ export default function ReceitaPreparacaoPage() {
     );
     return produtoEncontrado?.unidade || "-";
   }, [produtoSelecionado, produtos]);
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
+  }
 
   return (
     <section className={styles.page}>

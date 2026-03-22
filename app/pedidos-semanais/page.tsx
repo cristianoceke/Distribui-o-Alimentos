@@ -21,8 +21,88 @@ import type {
   PedidoSemanalGerado,
 } from "@/types/pedido-semanal";
 import styles from "./pedidos-semanais.module.css";
+import { createId, readStorage, useHydrated } from "@/utils/storage";
 
 type ItemAjustado = ItemPedidoSemanal;
+
+function hydratePedidos() {
+  return readStorage<PedidoSemanalGerado[]>("pedidos-semanais", []).map(
+    (pedido) => ({
+      ...pedido,
+      id: pedido.id ?? createId("pedido"),
+    })
+  );
+}
+
+function calcularTotalAlunosGrupo(escolas: Escola[], grupoSelecionado: string) {
+  return escolas.reduce((total, escola) => {
+    const grupoDaEscola = escola.grupos.find(
+      (grupo) => grupo.grupo === grupoSelecionado
+    );
+
+    return total + (grupoDaEscola?.quantidadeAlunos || 0);
+  }, 0);
+}
+
+function calcularItensPedido(params: {
+  grupoSelecionado: string;
+  semanaSelecionada: string;
+  cardapios: Cardapio[];
+  preparacoes: Preparacao[];
+  totalAlunosGrupo: number;
+}) {
+  const {
+    grupoSelecionado,
+    semanaSelecionada,
+    cardapios,
+    preparacoes,
+    totalAlunosGrupo,
+  } = params;
+
+  if (!grupoSelecionado || !semanaSelecionada) {
+    return [];
+  }
+
+  const cardapioDoGrupo = cardapios.find(
+    (cardapio) =>
+      cardapio.grupo === grupoSelecionado && cardapio.semana === semanaSelecionada
+  );
+
+  if (!cardapioDoGrupo) {
+    return [];
+  }
+
+  const itensCalculados = cardapioDoGrupo.itens.flatMap((item) => {
+    const preparacao = preparacoes.find((prep) => prep.nome === item.preparacao);
+
+    if (!preparacao) return [];
+
+    return preparacao.ingredientes.map((ingrediente) => ({
+      grupo: grupoSelecionado,
+      produto: ingrediente.produto,
+      unidade: ingrediente.unidade,
+      quantidade: Number(ingrediente.quantidade) * totalAlunosGrupo,
+      ativo: true,
+    }));
+  });
+
+  return itensCalculados.reduce((acc, item) => {
+    const itemExistente = acc.find(
+      (itemAcc) =>
+        itemAcc.produto === item.produto &&
+        itemAcc.unidade === item.unidade &&
+        itemAcc.grupo === item.grupo
+    );
+
+    if (itemExistente) {
+      itemExistente.quantidade += item.quantidade;
+    } else {
+      acc.push({ ...item });
+    }
+
+    return acc;
+  }, [] as ItemAjustado[]);
+}
 
 export default function PedidosSemanaisPage() {
   const semanas = ["1", "2", "3", "4"];
@@ -37,10 +117,16 @@ export default function PedidosSemanaisPage() {
     "restrição alimentar",
   ];
 
-  const [escolas, setEscolas] = useState<Escola[]>([]);
-  const [cardapios, setCardapios] = useState<Cardapio[]>([]);
-  const [preparacoes, setPreparacoes] = useState<Preparacao[]>([]);
-  const [saldos, setSaldos] = useState<SaldoLicitado[]>([]);
+  const [escolas] = useState<Escola[]>(() => readStorage<Escola[]>("escolas", []));
+  const [cardapios] = useState<Cardapio[]>(() =>
+    readStorage<Cardapio[]>("cardapios", [])
+  );
+  const [preparacoes] = useState<Preparacao[]>(() =>
+    readStorage<Preparacao[]>("preparacoes", [])
+  );
+  const [saldos, setSaldos] = useState<SaldoLicitado[]>(() =>
+    readStorage<SaldoLicitado[]>("saldos", [])
+  );
 
   const [grupoSelecionado, setGrupoSelecionado] = useState("");
   const [semanaSelecionada, setSemanaSelecionada] = useState("");
@@ -48,130 +134,16 @@ export default function PedidosSemanaisPage() {
   const [itensAjustados, setItensAjustados] = useState<ItemAjustado[]>([]);
 
   const [pedidosGerados, setPedidosGerados] = useState<PedidoSemanalGerado[]>(
-    []
+    hydratePedidos
   );
-  const [carregouPedidos, setCarregouPedidos] = useState(false);
-  const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
+  const [pedidoEditandoId, setPedidoEditandoId] = useState<string | null>(null);
+  const hydrated = useHydrated();
 
   useEffect(() => {
-    const escolasSalvas = localStorage.getItem("escolas");
-    if (escolasSalvas) {
-      setEscolas(JSON.parse(escolasSalvas));
-    }
-
-    const cardapiosSalvos = localStorage.getItem("cardapios");
-    if (cardapiosSalvos) {
-      setCardapios(JSON.parse(cardapiosSalvos));
-    }
-
-    const preparacoesSalvas = localStorage.getItem("preparacoes");
-    if (preparacoesSalvas) {
-      setPreparacoes(JSON.parse(preparacoesSalvas));
-    }
-
-    const saldosSalvos = localStorage.getItem("saldos");
-    if (saldosSalvos && saldosSalvos !== "undefined") {
-      try {
-        setSaldos(JSON.parse(saldosSalvos));
-      } catch {
-        setSaldos([]);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const pedidosSalvos = localStorage.getItem("pedidos-semanais");
-
-    if (!pedidosSalvos || pedidosSalvos === "undefined") {
-      setCarregouPedidos(true);
-      return;
-    }
-
-    try {
-      setPedidosGerados(JSON.parse(pedidosSalvos));
-    } catch {
-      setPedidosGerados([]);
-    }
-
-    setCarregouPedidos(true);
-  }, []);
-
-  useEffect(() => {
-    if (!carregouPedidos) return;
     localStorage.setItem("pedidos-semanais", JSON.stringify(pedidosGerados));
-  }, [pedidosGerados, carregouPedidos]);
+  }, [pedidosGerados]);
 
-  const totalAlunosGrupo = escolas.reduce((total, escola) => {
-    const grupoDaEscola = escola.grupos.find(
-      (grupo) => grupo.grupo === grupoSelecionado
-    );
-
-    return total + (grupoDaEscola?.quantidadeAlunos || 0);
-  }, 0);
-
-  useEffect(() => {
-    if (!grupoSelecionado || !semanaSelecionada) {
-      if (indiceEditando === null) {
-        setItensAjustados([]);
-      }
-      return;
-    }
-
-    if (indiceEditando !== null) return;
-
-    const cardapioDoGrupo = cardapios.find(
-      (cardapio) =>
-        cardapio.grupo === grupoSelecionado &&
-        cardapio.semana === semanaSelecionada
-    );
-
-    if (!cardapioDoGrupo) {
-      setItensAjustados([]);
-      return;
-    }
-
-    const itensCalculados = cardapioDoGrupo.itens.flatMap((item) => {
-      const preparacao = preparacoes.find(
-        (prep) => prep.nome === item.preparacao
-      );
-
-      if (!preparacao) return [];
-
-      return preparacao.ingredientes.map((ingrediente) => ({
-        grupo: grupoSelecionado,
-        produto: ingrediente.produto,
-        unidade: ingrediente.unidade,
-        quantidade: Number(ingrediente.quantidade) * totalAlunosGrupo,
-        ativo: true,
-      }));
-    });
-
-    const itensConsolidados = itensCalculados.reduce((acc, item) => {
-      const itemExistente = acc.find(
-        (itemAcc) =>
-          itemAcc.produto === item.produto &&
-          itemAcc.unidade === item.unidade &&
-          itemAcc.grupo === item.grupo
-      );
-
-      if (itemExistente) {
-        itemExistente.quantidade += item.quantidade;
-      } else {
-        acc.push({ ...item });
-      }
-
-      return acc;
-    }, [] as ItemAjustado[]);
-
-    setItensAjustados(itensConsolidados);
-  }, [
-    grupoSelecionado,
-    semanaSelecionada,
-    cardapios,
-    preparacoes,
-    totalAlunosGrupo,
-    indiceEditando,
-  ]);
+  const totalAlunosGrupo = calcularTotalAlunosGrupo(escolas, grupoSelecionado);
 
   function toggleItem(index: number) {
     const novaLista = [...itensAjustados];
@@ -248,7 +220,7 @@ export default function PedidosSemanaisPage() {
     }
 
     const confirmar = window.confirm(
-      indiceEditando === null
+      pedidoEditandoId === null
         ? "Deseja realmente gerar este pedido semanal?"
         : "Deseja salvar a edição deste pedido semanal?"
     );
@@ -256,6 +228,7 @@ export default function PedidosSemanaisPage() {
     if (!confirmar) return;
 
     const novoPedido: PedidoSemanalGerado = {
+      id: pedidoEditandoId ?? createId("pedido"),
       grupo: grupoSelecionado,
       semana: semanaSelecionada,
       dataGeracao: new Date().toISOString(),
@@ -268,60 +241,92 @@ export default function PedidosSemanaisPage() {
         })),
     };
 
-    let novaLista = [...pedidosGerados];
-    let indiceFinal = 0;
-
-    if (indiceEditando === null) {
-      novaLista.push(novoPedido);
-      indiceFinal = novaLista.length - 1;
-    } else {
-      novaLista[indiceEditando] = novoPedido;
-      indiceFinal = indiceEditando;
-    }
+    const novaLista =
+      pedidoEditandoId === null
+        ? [...pedidosGerados, novoPedido]
+        : pedidosGerados.map((pedido) =>
+            pedido.id === pedidoEditandoId ? novoPedido : pedido
+          );
 
     setPedidosGerados(novaLista);
-    localStorage.setItem("pedidos-semanais", JSON.stringify(novaLista));
 
     atualizarSaldosComBaseNosPedidos(novaLista);
 
-    setIndiceEditando(null);
+    setPedidoEditandoId(null);
 
-    window.open(`/pedidos-semanais/${indiceFinal}`, "_blank");
+    window.open(`/pedidos-semanais/${novoPedido.id}`, "_blank");
   }
 
-  function handleEditarPedido(indexParaEditar: number) {
-    const pedido = pedidosGerados[indexParaEditar];
+  function handleEditarPedido(pedidoId: string) {
+    const pedido = pedidosGerados.find((item) => item.id === pedidoId);
+
+    if (!pedido) {
+      return;
+    }
 
     setGrupoSelecionado(pedido.grupo);
     setSemanaSelecionada(pedido.semana);
     setItensAjustados(pedido.itens);
-    setIndiceEditando(indexParaEditar);
+    setPedidoEditandoId(pedido.id ?? null);
   }
 
   function handleCancelarEdicao() {
     setGrupoSelecionado("");
     setSemanaSelecionada("");
     setItensAjustados([]);
-    setIndiceEditando(null);
+    setPedidoEditandoId(null);
   }
 
-  function handleExcluirPedido(indexParaRemover: number) {
+  function handleSelecionarGrupo(novoGrupo: string) {
+    setGrupoSelecionado(novoGrupo);
+
+    if (pedidoEditandoId !== null) {
+      return;
+    }
+
+    setItensAjustados(
+      calcularItensPedido({
+        grupoSelecionado: novoGrupo,
+        semanaSelecionada,
+        cardapios,
+        preparacoes,
+        totalAlunosGrupo: calcularTotalAlunosGrupo(escolas, novoGrupo),
+      })
+    );
+  }
+
+  function handleSelecionarSemana(novaSemana: string) {
+    setSemanaSelecionada(novaSemana);
+
+    if (pedidoEditandoId !== null) {
+      return;
+    }
+
+    setItensAjustados(
+      calcularItensPedido({
+        grupoSelecionado,
+        semanaSelecionada: novaSemana,
+        cardapios,
+        preparacoes,
+        totalAlunosGrupo,
+      })
+    );
+  }
+
+  function handleExcluirPedido(pedidoId: string) {
     const confirmou = window.confirm(
       "Deseja realmente excluir este pedido semanal?"
     );
 
     if (!confirmou) return;
 
-    const novaLista = pedidosGerados.filter(
-      (_, index) => index !== indexParaRemover
-    );
+    const novaLista = pedidosGerados.filter((pedido) => pedido.id !== pedidoId);
 
     setPedidosGerados(novaLista);
-    localStorage.setItem("pedidos-semanais", JSON.stringify(novaLista));
 
     atualizarSaldosComBaseNosPedidos(novaLista);
 
-    if (indiceEditando === indexParaRemover) {
+    if (pedidoEditandoId === pedidoId) {
       handleCancelarEdicao();
     }
   }
@@ -340,6 +345,10 @@ export default function PedidosSemanaisPage() {
     if (status === "CRÍTICO") return styles.statusCritical;
     if (status === "ATENÇÃO") return styles.statusWarning;
     return styles.statusOk;
+  }
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
   }
 
   return (
@@ -372,14 +381,14 @@ export default function PedidosSemanaisPage() {
           <div className={styles.panelHeader}>
             <div>
               <h2 className={styles.panelTitle}>
-                {indiceEditando === null ? "Novo pedido" : "Editar pedido"}
+                {pedidoEditandoId === null ? "Novo pedido" : "Editar pedido"}
               </h2>
               <p className={styles.panelText}>
                 Selecione o grupo e a semana para gerar o pedido automaticamente.
               </p>
             </div>
 
-            {indiceEditando !== null && (
+            {pedidoEditandoId !== null && (
               <span className={styles.editingBadge}>Modo de edição</span>
             )}
           </div>
@@ -387,11 +396,11 @@ export default function PedidosSemanaisPage() {
           <div className={styles.form}>
             <div className={styles.field}>
               <label htmlFor="grupo">Grupo</label>
-              <select
-                id="grupo"
-                value={grupoSelecionado}
-                onChange={(event) => setGrupoSelecionado(event.target.value)}
-              >
+                <select
+                  id="grupo"
+                  value={grupoSelecionado}
+                  onChange={(event) => handleSelecionarGrupo(event.target.value)}
+                >
                 <option value="">Selecione o grupo</option>
                 {grupos.map((grupo) => (
                   <option key={grupo} value={grupo}>
@@ -403,11 +412,11 @@ export default function PedidosSemanaisPage() {
 
             <div className={styles.field}>
               <label htmlFor="semana">Semana</label>
-              <select
-                id="semana"
-                value={semanaSelecionada}
-                onChange={(event) => setSemanaSelecionada(event.target.value)}
-              >
+                <select
+                  id="semana"
+                  value={semanaSelecionada}
+                  onChange={(event) => handleSelecionarSemana(event.target.value)}
+                >
                 <option value="">Selecione a semana</option>
                 {semanas.map((semana) => (
                   <option key={semana} value={semana}>
@@ -459,13 +468,13 @@ export default function PedidosSemanaisPage() {
               >
                 <Save size={18} />
                 <span>
-                  {indiceEditando === null
+                  {pedidoEditandoId === null
                     ? "Gerar pedido semanal"
                     : "Salvar edição"}
                 </span>
               </button>
 
-              {indiceEditando !== null && (
+              {pedidoEditandoId !== null && (
                 <button
                   type="button"
                   onClick={handleCancelarEdicao}
@@ -581,8 +590,8 @@ export default function PedidosSemanaisPage() {
           </div>
         ) : (
           <div className={styles.historyList}>
-            {pedidosGerados.map((pedido, index) => (
-              <article key={index} className={styles.historyCard}>
+            {pedidosGerados.map((pedido) => (
+              <article key={pedido.id ?? pedido.dataGeracao} className={styles.historyCard}>
                 <div className={styles.historyCardHeader}>
                   <div>
                     <h3 className={styles.historyTitle}>{pedido.grupo}</h3>
@@ -598,7 +607,7 @@ export default function PedidosSemanaisPage() {
 
                 <div className={styles.historyActions}>
                   <Link
-                    href={`/pedidos-semanais/${index}`}
+                    href={`/pedidos-semanais/${pedido.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.linkButton}
@@ -609,7 +618,7 @@ export default function PedidosSemanaisPage() {
 
                   <button
                     type="button"
-                    onClick={() => handleEditarPedido(index)}
+                    onClick={() => handleEditarPedido(pedido.id ?? "")}
                     className={styles.secondaryButton}
                   >
                     <Pencil size={18} />
@@ -618,7 +627,7 @@ export default function PedidosSemanaisPage() {
 
                   <button
                     type="button"
-                    onClick={() => handleExcluirPedido(index)}
+                    onClick={() => handleExcluirPedido(pedido.id ?? "")}
                     className={styles.dangerButton}
                   >
                     <Trash2 size={18} />

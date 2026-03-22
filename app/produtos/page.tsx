@@ -5,6 +5,7 @@ import { Plus, Save, X } from "lucide-react";
 import ListaProdutos from "@/components/ListaProdutos";
 import type { Produto } from "@/types/produto";
 import styles from "@/app/produtos/produtos.module.css";
+import { createId, readStorage, useHydrated } from "@/utils/storage";
 
 const unidades = ["Kg", "g", "litro", "unidade"];
 
@@ -18,36 +19,32 @@ const categorias = [
   "outros",
 ];
 
+function hydrateProdutos() {
+  return readStorage<Produto[]>("produtos", []).map((produto) => ({
+    ...produto,
+    id: produto.id ?? createId("produto"),
+  }));
+}
+
 export default function ProdutosPage() {
   const [nome, setNome] = useState("");
   const [unidade, setUnidade] = useState("Kg");
   const [categoria, setCategoria] = useState("");
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [carregouProdutos, setCarregouProdutos] = useState(false);
+  const [produtos, setProdutos] = useState<Produto[]>(hydrateProdutos);
   const [erro, setErro] = useState("");
-  const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
+  const [produtoEditandoId, setProdutoEditandoId] = useState<string | null>(null);
+  const hydrated = useHydrated();
 
   useEffect(() => {
-    const produtosSalvos = localStorage.getItem("produtos");
-
-    if (produtosSalvos) {
-      setProdutos(JSON.parse(produtosSalvos));
-    }
-
-    setCarregouProdutos(true);
-  }, []);
-
-  useEffect(() => {
-    if (!carregouProdutos) return;
     localStorage.setItem("produtos", JSON.stringify(produtos));
-  }, [produtos, carregouProdutos]);
+  }, [produtos]);
 
   function limparFormulario() {
     setNome("");
     setUnidade("Kg");
     setCategoria("");
     setErro("");
-    setIndiceEditando(null);
+    setProdutoEditandoId(null);
   }
 
   function handleAdicionarProduto(event: React.FormEvent<HTMLFormElement>) {
@@ -55,9 +52,9 @@ export default function ProdutosPage() {
 
     const nomeNormalizado = nome.trim().toLowerCase();
 
-    const produtoJaExiste = produtos.some((produto, index) => {
+    const produtoJaExiste = produtos.some((produto) => {
       const mesmoNome = produto.nome.trim().toLowerCase() === nomeNormalizado;
-      const outroProduto = index !== indiceEditando;
+      const outroProduto = produto.id !== produtoEditandoId;
       return mesmoNome && outroProduto;
     });
 
@@ -72,40 +69,44 @@ export default function ProdutosPage() {
     }
 
     const novoProduto: Produto = {
+      id: produtoEditandoId ?? createId("produto"),
       nome: nome.trim(),
       unidade,
       categoria,
     };
 
-    const novaLista = [...produtos];
-
-    if (indiceEditando === null) {
-      novaLista.push(novoProduto);
-    } else {
-      novaLista[indiceEditando] = novoProduto;
-    }
+    const novaLista =
+      produtoEditandoId === null
+        ? [...produtos, novoProduto]
+        : produtos.map((produto) =>
+            produto.id === produtoEditandoId ? novoProduto : produto
+          );
 
     novaLista.sort((a, b) => a.nome.localeCompare(b.nome));
     setProdutos(novaLista);
     limparFormulario();
   }
 
-  function handleRemoverProduto(indexParaRemover: number) {
-    const novaLista = produtos.filter((_, index) => index !== indexParaRemover);
+  function handleRemoverProduto(produtoId: string) {
+    const novaLista = produtos.filter((produto) => produto.id !== produtoId);
     setProdutos(novaLista);
 
-    if (indiceEditando === indexParaRemover) {
+    if (produtoEditandoId === produtoId) {
       limparFormulario();
     }
   }
 
-  function handleEditarProduto(indexParaEditar: number) {
-    const produto = produtos[indexParaEditar];
+  function handleEditarProduto(produtoId: string) {
+    const produto = produtos.find((item) => item.id === produtoId);
+
+    if (!produto) {
+      return;
+    }
 
     setNome(produto.nome);
     setUnidade(produto.unidade);
     setCategoria(produto.categoria);
-    setIndiceEditando(indexParaEditar);
+    setProdutoEditandoId(produto.id ?? null);
     setErro("");
   }
 
@@ -116,6 +117,10 @@ export default function ProdutosPage() {
   const totalCategorias = useMemo(() => {
     return new Set(produtos.map((produto) => produto.categoria)).size;
   }, [produtos]);
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
+  }
 
   return (
     <section className={styles.page}>
@@ -147,14 +152,14 @@ export default function ProdutosPage() {
           <div className={styles.panelHeader}>
             <div>
               <h2 className={styles.panelTitle}>
-                {indiceEditando === null ? "Novo produto" : "Editar produto"}
+                {produtoEditandoId === null ? "Novo produto" : "Editar produto"}
               </h2>
               <p className={styles.panelText}>
                 Informe nome, unidade de medida e categoria do alimento.
               </p>
             </div>
 
-            {indiceEditando !== null && (
+            {produtoEditandoId !== null && (
               <span className={styles.editingBadge}>Modo de edição</span>
             )}
           </div>
@@ -232,13 +237,13 @@ export default function ProdutosPage() {
 
             <div className={styles.actions}>
               <button type="submit" className={styles.primaryButton}>
-                {indiceEditando === null ? <Plus size={18} /> : <Save size={18} />}
+                {produtoEditandoId === null ? <Plus size={18} /> : <Save size={18} />}
                 <span>
-                  {indiceEditando === null ? "Adicionar produto" : "Salvar edição"}
+                  {produtoEditandoId === null ? "Adicionar produto" : "Salvar edição"}
                 </span>
               </button>
 
-              {indiceEditando !== null && (
+              {produtoEditandoId !== null && (
                 <button
                   type="button"
                   onClick={handleCancelarEdicao}
@@ -264,7 +269,7 @@ export default function ProdutosPage() {
 
           <ListaProdutos
             produtos={produtos}
-            indiceEditando={indiceEditando}
+            produtoEditandoId={produtoEditandoId}
             onRemoverProduto={handleRemoverProduto}
             onEditarProduto={handleEditarProduto}
             onCancelarEdicao={handleCancelarEdicao}

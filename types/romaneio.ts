@@ -6,6 +6,7 @@ export type ItemRomaneio = {
 }
 
 export type RomaneioGerado = {
+  id?: string
   escola: string
   semana: string
   dataGeracao: string

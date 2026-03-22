@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import type { Escola, GrupoEscola } from "@/types/escola";
 import styles from "@/app/escolas/escola.module.css";
+import { readStorage, useHydrated } from "@/utils/storage";
 
 const gruposDisponiveis = [
   "creche 6 a 11 meses",
@@ -25,21 +26,14 @@ export default function EscolasPage() {
   const [quantidadesPorGrupo, setQuantidadesPorGrupo] = useState<
     Record<string, string>
   >({});
-  const [escolas, setEscolas] = useState<Escola[]>([]);
-  const [carregouEscolas, setCarregouEscolas] = useState(false);
+  const [escolas, setEscolas] = useState<Escola[]>(() =>
+    readStorage<Escola[]>("escolas", [])
+  );
+  const hydrated = useHydrated();
 
   useEffect(() => {
-    const escolasSalvas = localStorage.getItem("escolas");
-    if (escolasSalvas) {
-      setEscolas(JSON.parse(escolasSalvas));
-    }
-    setCarregouEscolas(true);
-  }, []);
-
-  useEffect(() => {
-    if (!carregouEscolas) return;
     localStorage.setItem("escolas", JSON.stringify(escolas));
-  }, [escolas, carregouEscolas]);
+  }, [escolas]);
 
   function handleToggleGrupo(grupoMarcado: string) {
     const jaSelecionado = gruposSelecionados.includes(grupoMarcado);
@@ -160,6 +154,10 @@ export default function EscolasPage() {
       return total + totalEscola;
     }, 0);
   }, [escolas]);
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
+  }
 
   return (
     <section className={styles.page}>

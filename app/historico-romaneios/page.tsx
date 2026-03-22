@@ -5,24 +5,22 @@ import Link from "next/link";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import type { RomaneioGerado } from "@/types/romaneio";
 import styles from "@/app/historico-romaneios/historico.module.css";
+import { createId, readStorage, useHydrated } from "@/utils/storage";
+
+function hydrateRomaneios() {
+  return readStorage<RomaneioGerado[]>("romaneios", []).map((romaneio) => ({
+    ...romaneio,
+    id: romaneio.id ?? createId("romaneio"),
+  }));
+}
 
 export default function HistoricoRomaneiosPage() {
-  const [romaneios, setRomaneios] = useState<RomaneioGerado[]>([]);
+  const [romaneios, setRomaneios] = useState<RomaneioGerado[]>(hydrateRomaneios);
+  const hydrated = useHydrated();
 
   useEffect(() => {
-    const romaneiosSalvos = localStorage.getItem("romaneios");
-
-    if (!romaneiosSalvos || romaneiosSalvos === "undefined") {
-      setRomaneios([]);
-      return;
-    }
-
-    try {
-      setRomaneios(JSON.parse(romaneiosSalvos));
-    } catch {
-      setRomaneios([]);
-    }
-  }, []);
+    localStorage.setItem("romaneios", JSON.stringify(romaneios));
+  }, [romaneios]);
 
   function formatarData(dataIso: string) {
     const data = new Date(dataIso);
@@ -34,14 +32,13 @@ export default function HistoricoRomaneiosPage() {
     });
   }
 
-  function handleExcluirRomaneio(indexParaRemover: number) {
+  function handleExcluirRomaneio(romaneioId: string) {
     const confirmou = window.confirm("Deseja realmente excluir este romaneio?");
 
     if (!confirmou) return;
 
-    const novaLista = romaneios.filter((_, index) => index !== indexParaRemover);
+    const novaLista = romaneios.filter((romaneio) => romaneio.id !== romaneioId);
     setRomaneios(novaLista);
-    localStorage.setItem("romaneios", JSON.stringify(novaLista));
   }
 
   const totalItens = useMemo(() => {
@@ -58,6 +55,10 @@ export default function HistoricoRomaneiosPage() {
 
     return formatarData(listaOrdenada[0].dataGeracao);
   }, [romaneios]);
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
+  }
 
   return (
     <section className={styles.page}>
@@ -110,8 +111,8 @@ export default function HistoricoRomaneiosPage() {
           </div>
         ) : (
           <div className={styles.historyList}>
-            {romaneios.map((romaneio, index) => (
-              <article key={index} className={styles.historyCard}>
+            {romaneios.map((romaneio) => (
+              <article key={romaneio.id ?? romaneio.dataGeracao} className={styles.historyCard}>
                 <div className={styles.historyCardHeader}>
                   <div>
                     <h3 className={styles.schoolName}>{romaneio.escola}</h3>
@@ -145,7 +146,7 @@ export default function HistoricoRomaneiosPage() {
 
                 <div className={styles.cardActions}>
                   <Link
-                    href={`/historico-romaneios/${index}`}
+                    href={`/historico-romaneios/${romaneio.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.primaryLink}
@@ -155,7 +156,7 @@ export default function HistoricoRomaneiosPage() {
                   </Link>
 
                   <Link
-                    href={`/romaneio?editar=${index}`}
+                    href={`/romaneio?editar=${romaneio.id}`}
                     className={styles.secondaryLink}
                   >
                     <Pencil size={18} />
@@ -164,7 +165,7 @@ export default function HistoricoRomaneiosPage() {
 
                   <button
                     type="button"
-                    onClick={() => handleExcluirRomaneio(index)}
+                    onClick={() => handleExcluirRomaneio(romaneio.id ?? "")}
                     className={styles.dangerButton}
                   >
                     <Trash2 size={18} />

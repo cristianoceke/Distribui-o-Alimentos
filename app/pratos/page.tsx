@@ -12,32 +12,25 @@ import {
   BookOpen,
 } from "lucide-react";
 import styles from "@/app/pratos/pratos.module.css";
+import { createId, readStorage, useHydrated } from "@/utils/storage";
+
+function hydratePreparacoes() {
+  return readStorage<Preparacao[]>("preparacoes", []).map((preparacao) => ({
+    ...preparacao,
+    id: preparacao.id ?? createId("preparacao"),
+  }));
+}
 
 export default function PreparacoesPage() {
   const [nome, setNome] = useState("");
-  const [preparacoes, setPreparacoes] = useState<Preparacao[]>([]);
-  const [carregouPreparacoes, setCarregouPreparacoes] = useState(false);
+  const [preparacoes, setPreparacoes] = useState<Preparacao[]>(hydratePreparacoes);
   const [erro, setErro] = useState("");
   const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
+  const hydrated = useHydrated();
 
   useEffect(() => {
-    const preparacoesSalvas = localStorage.getItem("preparacoes");
-
-    if (preparacoesSalvas && preparacoesSalvas !== "undefined") {
-      try {
-        setPreparacoes(JSON.parse(preparacoesSalvas));
-      } catch {
-        setPreparacoes([]);
-      }
-    }
-
-    setCarregouPreparacoes(true);
-  }, []);
-
-  useEffect(() => {
-    if (!carregouPreparacoes) return;
     localStorage.setItem("preparacoes", JSON.stringify(preparacoes));
-  }, [preparacoes, carregouPreparacoes]);
+  }, [preparacoes]);
 
   function limparFormulario() {
     setNome("");
@@ -69,6 +62,8 @@ export default function PreparacoesPage() {
     }
 
     const novaPreparacao: Preparacao = {
+      id:
+        indiceEditando !== null ? preparacoes[indiceEditando]?.id : createId("preparacao"),
       nome: nome.trim(),
       ingredientes:
         indiceEditando !== null
@@ -119,6 +114,10 @@ export default function PreparacoesPage() {
       0
     );
   }, [preparacoes]);
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
+  }
 
   return (
     <section className={styles.page}>

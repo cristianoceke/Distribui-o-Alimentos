@@ -7,6 +7,7 @@ export type ItemPedidoSemanal = {
 }
 
 export type PedidoSemanalGerado = {
+  id?: string
   grupo: string
   semana: string
   dataGeracao: string

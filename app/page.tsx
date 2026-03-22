@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 import {
@@ -20,6 +20,7 @@ import type { Produto } from "@/types/produto";
 import type { Preparacao } from "@/types/preparacao";
 import type { Cardapio } from "@/types/cardapio";
 import type { RomaneioGerado } from "@/types/romaneio";
+import { readStorage, useHydrated } from "@/utils/storage";
 
 type RefeicaoDia = {
   refeicao: string;
@@ -32,74 +33,57 @@ type DiaResumo = {
   refeicoes: RefeicaoDia[];
 };
 
+const diasOrdem = [
+  { label: "Segunda-feira", chave: "segunda" },
+  { label: "Terça-feira", chave: "terca" },
+  { label: "Quarta-feira", chave: "quarta" },
+  { label: "Quinta-feira", chave: "quinta" },
+  { label: "Sexta-feira", chave: "sexta" },
+];
+
+function normalizarTexto(texto: string) {
+  return texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/-feira/g, "")
+    .replace(/feira/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+function normalizarDia(dia: string) {
+  const valor = normalizarTexto(dia);
+
+  if (valor.includes("segunda")) return "segunda";
+  if (valor.includes("terca")) return "terca";
+  if (valor.includes("quarta")) return "quarta";
+  if (valor.includes("quinta")) return "quinta";
+  if (valor.includes("sexta")) return "sexta";
+
+  return valor;
+}
+
 export default function Home() {
-  const [escolas, setEscolas] = useState<Escola[]>([]);
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [preparacoes, setPreparacoes] = useState<Preparacao[]>([]);
-  const [cardapios, setCardapios] = useState<Cardapio[]>([]);
-  const [romaneios, setRomaneios] = useState<RomaneioGerado[]>([]);
+  const [escolas] = useState<Escola[]>(() => readStorage<Escola[]>("escolas", []));
+  const [produtos] = useState<Produto[]>(() => readStorage<Produto[]>("produtos", []));
+  const [preparacoes] = useState<Preparacao[]>(() =>
+    readStorage<Preparacao[]>("preparacoes", [])
+  );
+  const [cardapios] = useState<Cardapio[]>(() =>
+    readStorage<Cardapio[]>("cardapios", [])
+  );
+  const [romaneios] = useState<RomaneioGerado[]>(() =>
+    readStorage<RomaneioGerado[]>("romaneios", [])
+  );
   const [diaAtivo, setDiaAtivo] = useState("segunda");
-  const [grupoSelecionado, setGrupoSelecionado] = useState("");
-
-  useEffect(() => {
-    const escolasCarregadas = lerStorage<Escola[]>("escolas", []);
-    const produtosCarregados = lerStorage<Produto[]>("produtos", []);
-    const preparacoesCarregadas = lerStorage<Preparacao[]>("preparacoes", []);
-    const cardapiosCarregados = lerStorage<Cardapio[]>("cardapios", []);
-    const romaneiosCarregados = lerStorage<RomaneioGerado[]>("romaneios", []);
-
-    setEscolas(escolasCarregadas);
-    setProdutos(produtosCarregados);
-    setPreparacoes(preparacoesCarregadas);
-    setCardapios(cardapiosCarregados);
-    setRomaneios(romaneiosCarregados);
-  }, []);
-
-  useEffect(() => {
-    if (!grupoSelecionado && cardapios.length > 0) {
-      const grupos = [...new Set(cardapios.map((item) => item.grupo))];
-      if (grupos[0]) {
-        setGrupoSelecionado(grupos[0]);
-      }
-    }
-  }, [cardapios, grupoSelecionado]);
-
-  function lerStorage<T>(chave: string, valorPadrao: T): T {
-    const valor = localStorage.getItem(chave);
-
-    if (!valor || valor === "undefined") {
-      return valorPadrao;
-    }
-
-    try {
-      return JSON.parse(valor) as T;
-    } catch {
-      return valorPadrao;
-    }
-  }
-
-  function normalizarTexto(texto: string) {
-    return texto
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/-feira/g, "")
-      .replace(/feira/g, "")
-      .replace(/\s+/g, "")
-      .trim();
-  }
-
-  function normalizarDia(dia: string) {
-    const valor = normalizarTexto(dia);
-
-    if (valor.includes("segunda")) return "segunda";
-    if (valor.includes("terca")) return "terca";
-    if (valor.includes("quarta")) return "quarta";
-    if (valor.includes("quinta")) return "quinta";
-    if (valor.includes("sexta")) return "sexta";
-
-    return valor;
-  }
+  const [grupoSelecionado, setGrupoSelecionado] = useState(() => {
+    const grupos = [
+      ...new Set(readStorage<Cardapio[]>("cardapios", []).map((item) => item.grupo)),
+    ];
+    return grupos[0] || "";
+  });
+  const hydrated = useHydrated();
 
   const totalGrupos = useMemo(() => {
     return escolas.reduce((total, escola) => total + escola.grupos.length, 0);
@@ -113,14 +97,6 @@ export default function Home() {
     const semanas = [...new Set(cardapios.map((item) => item.semana))];
     return semanas[0] || "";
   }, [cardapios]);
-
-  const diasOrdem = [
-    { label: "Segunda-feira", chave: "segunda" },
-    { label: "Terça-feira", chave: "terca" },
-    { label: "Quarta-feira", chave: "quarta" },
-    { label: "Quinta-feira", chave: "quinta" },
-    { label: "Sexta-feira", chave: "sexta" },
-  ];
 
   const resumoSemana = useMemo<DiaResumo[]>(() => {
     const base = cardapios.filter((item) => {
@@ -203,6 +179,10 @@ export default function Home() {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
+  }
+
+  if (!hydrated) {
+    return <main className={styles.page} />;
   }
 
   return (

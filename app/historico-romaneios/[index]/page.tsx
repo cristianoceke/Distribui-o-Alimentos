@@ -1,34 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import type { RomaneioGerado } from "@/types/romaneio";
 import styles from "@/app/historico-romaneios/[index]/historico-romaneios.module.css";
+import { createId, readStorage, useHydrated } from "@/utils/storage";
+
+function hydrateRomaneios() {
+  return readStorage<RomaneioGerado[]>("romaneios", []).map((romaneio) => ({
+    ...romaneio,
+    id: romaneio.id ?? createId("romaneio"),
+  }));
+}
 
 export default function RomaneioSalvoPage() {
   const params = useParams();
-  const index = Number(
-    Array.isArray(params.index) ? params.index[0] : params.index
-  );
+  const romaneioId = Array.isArray(params.index) ? params.index[0] : params.index;
+  const hydrated = useHydrated();
+  const [romaneio] = useState<RomaneioGerado | null>(() => {
+    const lista = hydrateRomaneios();
+    return lista.find((item) => item.id === romaneioId) ?? null;
+  });
 
-  const [romaneio, setRomaneio] = useState<RomaneioGerado | null>(null);
-
-  useEffect(() => {
-    const romaneiosSalvos = localStorage.getItem("romaneios");
-
-    if (!romaneiosSalvos || romaneiosSalvos === "undefined") return;
-
-    try {
-      const lista = JSON.parse(romaneiosSalvos) as RomaneioGerado[];
-
-      if (!Number.isNaN(index) && lista[index]) {
-        setRomaneio(lista[index]);
-      }
-    } catch {
-      setRomaneio(null);
-    }
-  }, [index]);
+  if (!hydrated) {
+    return <main className={styles.page} />;
+  }
 
   function formatarData(dataIso: string) {
     const data = new Date(dataIso);

@@ -5,6 +5,7 @@ import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import type { Cardapio, ItemCardapio } from "@/types/cardapio";
 import type { Preparacao } from "@/types/preparacao";
 import styles from "@/app/cardapios/cardapios.module.css";
+import { readStorage, useHydrated } from "@/utils/storage";
 
 const gruposCardapio = [
   "creche 6 a 11 meses",
@@ -43,33 +44,21 @@ export default function CardapiosPage() {
   const [refeicao, setRefeicao] = useState("");
   const [preparacao, setPreparacao] = useState("");
 
-  const [cardapios, setCardapios] = useState<Cardapio[]>([]);
-  const [preparacoes, setPreparacoes] = useState<Preparacao[]>([]);
-  const [carregouCardapios, setCarregouCardapios] = useState(false);
+  const [cardapios, setCardapios] = useState<Cardapio[]>(() =>
+    readStorage<Cardapio[]>("cardapios", [])
+  );
+  const [preparacoes] = useState<Preparacao[]>(() =>
+    readStorage<Preparacao[]>("preparacoes", [])
+  );
 
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
   const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
+  const hydrated = useHydrated();
 
   useEffect(() => {
-    const preparacoesSalvas = localStorage.getItem("preparacoes");
-    if (preparacoesSalvas) {
-      setPreparacoes(JSON.parse(preparacoesSalvas));
-    }
-  }, []);
-
-  useEffect(() => {
-    const cardapiosSalvos = localStorage.getItem("cardapios");
-    if (cardapiosSalvos) {
-      setCardapios(JSON.parse(cardapiosSalvos));
-    }
-    setCarregouCardapios(true);
-  }, []);
-
-  useEffect(() => {
-    if (!carregouCardapios) return;
     localStorage.setItem("cardapios", JSON.stringify(cardapios));
-  }, [cardapios, carregouCardapios]);
+  }, [cardapios]);
 
   function limparMensagem() {
     setErro("");
@@ -221,6 +210,10 @@ export default function CardapiosPage() {
   const totalItensCadastrados = useMemo(() => {
     return cardapios.reduce((total, cardapio) => total + cardapio.itens.length, 0);
   }, [cardapios]);
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
+  }
 
   return (
     <section className={styles.page}>

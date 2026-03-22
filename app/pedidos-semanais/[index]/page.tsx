@@ -1,34 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import type { PedidoSemanalGerado } from "@/types/pedido-semanal";
 import styles from "@/app/pedidos-semanais/[index]/pedidos-semanais.module.css";
+import { createId, readStorage, useHydrated } from "@/utils/storage";
+
+function hydratePedidos() {
+  return readStorage<PedidoSemanalGerado[]>("pedidos-semanais", []).map(
+    (pedido) => ({
+      ...pedido,
+      id: pedido.id ?? createId("pedido"),
+    })
+  );
+}
 
 export default function PedidoSemanalSalvoPage() {
   const params = useParams();
-  const index = Number(
-    Array.isArray(params.index) ? params.index[0] : params.index
-  );
+  const pedidoId = Array.isArray(params.index) ? params.index[0] : params.index;
+  const hydrated = useHydrated();
+  const [pedido] = useState<PedidoSemanalGerado | null>(() => {
+    const lista = hydratePedidos();
+    return lista.find((item) => item.id === pedidoId) ?? null;
+  });
 
-  const [pedido, setPedido] = useState<PedidoSemanalGerado | null>(null);
-
-  useEffect(() => {
-    const pedidosSalvos = localStorage.getItem("pedidos-semanais");
-
-    if (!pedidosSalvos || pedidosSalvos === "undefined") return;
-
-    try {
-      const lista = JSON.parse(pedidosSalvos) as PedidoSemanalGerado[];
-
-      if (!Number.isNaN(index) && lista[index]) {
-        setPedido(lista[index]);
-      }
-    } catch {
-      setPedido(null);
-    }
-  }, [index]);
+  if (!hydrated) {
+    return <main className={styles.page} />;
+  }
 
   function formatarData(dataIso: string) {
     const data = new Date(dataIso);

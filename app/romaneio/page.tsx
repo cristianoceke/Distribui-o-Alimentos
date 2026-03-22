@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Escola } from "@/types/escola";
 import type { Cardapio } from "@/types/cardapio";
@@ -8,6 +8,7 @@ import type { Preparacao } from "@/types/preparacao";
 import type { RomaneioGerado } from "@/types/romaneio";
 import type { SaldoLicitado } from "@/types/saldo";
 import styles from "./romaneio.module.css";
+import { createId, readStorage, useHydrated } from "@/utils/storage";
 
 type ItemCalculado = {
   produto: string;
@@ -20,187 +21,116 @@ type ItemAjustado = ItemCalculado & {
   ativo: boolean;
 };
 
+function hydrateRomaneios() {
+  return readStorage<RomaneioGerado[]>("romaneios", []).map((romaneio) => ({
+    ...romaneio,
+    id: romaneio.id ?? createId("romaneio"),
+  }));
+}
+
+function calcularItensRomaneio(params: {
+  escolaSelecionada: string;
+  semana: string;
+  escolas: Escola[];
+  cardapios: Cardapio[];
+  preparacoes: Preparacao[];
+}) {
+  const { escolaSelecionada, semana, escolas, cardapios, preparacoes } = params;
+
+  const escolaEscolhida = escolas.find((escola) => escola.nome === escolaSelecionada);
+
+  if (!escolaEscolhida || !semana) {
+    return [];
+  }
+
+  const cardapiosDaSemana = cardapios.filter((cardapio) => cardapio.semana === semana);
+
+  const cardapiosDaEscola = cardapiosDaSemana.filter((cardapio) =>
+    escolaEscolhida.grupos.some((grupo) => grupo.grupo === cardapio.grupo)
+  );
+
+  const itensCalculados: ItemCalculado[] = [];
+
+  cardapiosDaEscola.forEach((cardapio) => {
+    const grupoDaEscola = escolaEscolhida.grupos.find(
+      (grupo) => grupo.grupo === cardapio.grupo
+    );
+
+    const qtdAlunos = grupoDaEscola?.quantidadeAlunos || 0;
+
+    cardapio.itens.forEach((item) => {
+      const preparacao = preparacoes.find((prep) => prep.nome === item.preparacao);
+
+      if (!preparacao) return;
+
+      preparacao.ingredientes.forEach((ingrediente) => {
+        itensCalculados.push({
+          produto: ingrediente.produto,
+          unidade: ingrediente.unidade,
+          quantidade: Number(ingrediente.quantidade) * qtdAlunos,
+          grupo: cardapio.grupo,
+        });
+      });
+    });
+  });
+
+  const consolidados: ItemCalculado[] = [];
+
+  itensCalculados.forEach((item) => {
+    const existente = consolidados.find(
+      (consolidado) =>
+        consolidado.produto === item.produto &&
+        consolidado.unidade === item.unidade &&
+        consolidado.grupo === item.grupo
+    );
+
+    if (existente) {
+      existente.quantidade += item.quantidade;
+    } else {
+      consolidados.push({ ...item });
+    }
+  });
+
+  return consolidados.map((item) => ({
+    ...item,
+    ativo: true,
+  }));
+}
+
 export default function RomaneioPage() {
   const searchParams = useSearchParams();
   const editarParam = searchParams.get("editar");
 
   const semanas = ["1", "2", "3", "4"];
+  const romaneioInicial = editarParam
+    ? hydrateRomaneios().find((item) => item.id === editarParam) ?? null
+    : null;
 
-  const [escolas, setEscolas] = useState<Escola[]>([]);
-  const [escolaSelecionada, setEscolaSelecionada] = useState("");
-  const [semana, setSemana] = useState("");
+  const [escolas] = useState<Escola[]>(() => readStorage<Escola[]>("escolas", []));
+  const [escolaSelecionada, setEscolaSelecionada] = useState(
+    romaneioInicial?.escola ?? ""
+  );
+  const [semana, setSemana] = useState(romaneioInicial?.semana ?? "");
 
-  const [cardapios, setCardapios] = useState<Cardapio[]>([]);
-  const [preparacoes, setPreparacoes] = useState<Preparacao[]>([]);
-  const [saldos, setSaldos] = useState<SaldoLicitado[]>([]);
+  const [cardapios] = useState<Cardapio[]>(() => readStorage<Cardapio[]>("cardapios", []));
+  const [preparacoes] = useState<Preparacao[]>(() =>
+    readStorage<Preparacao[]>("preparacoes", [])
+  );
+  const [saldos, setSaldos] = useState<SaldoLicitado[]>(() =>
+    readStorage<SaldoLicitado[]>("saldos", [])
+  );
 
-  const [itensAjustados, setItensAjustados] = useState<ItemAjustado[]>([]);
-  const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
-  const [carregouEdicao, setCarregouEdicao] = useState(false);
+  const [itensAjustados, setItensAjustados] = useState<ItemAjustado[]>(
+    romaneioInicial?.itens.map((item) => ({ ...item, ativo: true })) ?? []
+  );
+  const [romaneioEditandoId, setRomaneioEditandoId] = useState<string | null>(
+    romaneioInicial?.id ?? null
+  );
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
-
-  useEffect(() => {
-    const escolasSalvas = localStorage.getItem("escolas");
-    if (escolasSalvas && escolasSalvas !== "undefined") {
-      try {
-        setEscolas(JSON.parse(escolasSalvas));
-      } catch {
-        setEscolas([]);
-      }
-    }
-
-    const cardapiosSalvos = localStorage.getItem("cardapios");
-    if (cardapiosSalvos && cardapiosSalvos !== "undefined") {
-      try {
-        setCardapios(JSON.parse(cardapiosSalvos));
-      } catch {
-        setCardapios([]);
-      }
-    }
-
-    const preparacoesSalvas = localStorage.getItem("preparacoes");
-    if (preparacoesSalvas && preparacoesSalvas !== "undefined") {
-      try {
-        setPreparacoes(JSON.parse(preparacoesSalvas));
-      } catch {
-        setPreparacoes([]);
-      }
-    }
-
-    const saldosSalvos = localStorage.getItem("saldos");
-    if (saldosSalvos && saldosSalvos !== "undefined") {
-      try {
-        setSaldos(JSON.parse(saldosSalvos));
-      } catch {
-        setSaldos([]);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (editarParam === null) {
-      setCarregouEdicao(true);
-      return;
-    }
-
-    const indice = Number(editarParam);
-
-    if (Number.isNaN(indice)) {
-      setCarregouEdicao(true);
-      return;
-    }
-
-    const romaneiosSalvos = localStorage.getItem("romaneios");
-
-    if (!romaneiosSalvos || romaneiosSalvos === "undefined") {
-      setCarregouEdicao(true);
-      return;
-    }
-
-    try {
-      const lista = JSON.parse(romaneiosSalvos) as RomaneioGerado[];
-      const romaneio = lista[indice];
-
-      if (!romaneio) {
-        setCarregouEdicao(true);
-        return;
-      }
-
-      setEscolaSelecionada(romaneio.escola);
-      setSemana(romaneio.semana);
-      setItensAjustados(
-        romaneio.itens.map((item) => ({
-          ...item,
-          ativo: true,
-        }))
-      );
-      setIndiceEditando(indice);
-    } catch {
-      setIndiceEditando(null);
-    } finally {
-      setCarregouEdicao(true);
-    }
-  }, [editarParam]);
+  const hydrated = useHydrated();
 
   const escolaEscolhida = escolas.find((e) => e.nome === escolaSelecionada);
-
-  useEffect(() => {
-    if (!carregouEdicao) return;
-
-    if (!escolaEscolhida || !semana) {
-      if (indiceEditando === null) {
-        setItensAjustados([]);
-      }
-      return;
-    }
-
-    if (indiceEditando !== null) return;
-
-    const cardapiosDaSemana = cardapios.filter((c) => c.semana === semana);
-
-    const cardapiosDaEscola = cardapiosDaSemana.filter((cardapio) =>
-      escolaEscolhida.grupos.some((g) => g.grupo === cardapio.grupo)
-    );
-
-    const itensCalculados: ItemCalculado[] = [];
-
-    cardapiosDaEscola.forEach((cardapio) => {
-      const grupoDaEscola = escolaEscolhida.grupos.find(
-        (g) => g.grupo === cardapio.grupo
-      );
-
-      const qtdAlunos = grupoDaEscola?.quantidadeAlunos || 0;
-
-      cardapio.itens.forEach((item) => {
-        const preparacao = preparacoes.find(
-          (p) => p.nome === item.preparacao
-        );
-
-        if (!preparacao) return;
-
-        preparacao.ingredientes.forEach((ing) => {
-          itensCalculados.push({
-            produto: ing.produto,
-            unidade: ing.unidade,
-            quantidade: Number(ing.quantidade) * qtdAlunos,
-            grupo: cardapio.grupo,
-          });
-        });
-      });
-    });
-
-    const consolidados: ItemCalculado[] = [];
-
-    itensCalculados.forEach((item) => {
-      const existente = consolidados.find(
-        (i) =>
-          i.produto === item.produto &&
-          i.unidade === item.unidade &&
-          i.grupo === item.grupo
-      );
-
-      if (existente) {
-        existente.quantidade += item.quantidade;
-      } else {
-        consolidados.push({ ...item });
-      }
-    });
-
-    setItensAjustados(
-      consolidados.map((item) => ({
-        ...item,
-        ativo: true,
-      }))
-    );
-  }, [
-    carregouEdicao,
-    escolaEscolhida,
-    semana,
-    cardapios,
-    preparacoes,
-    indiceEditando,
-  ]);
 
   function limparMensagens() {
     setErro("");
@@ -232,17 +162,7 @@ export default function RomaneioPage() {
   }
 
   function recalcularSaldosComBaseNosRomaneios(listaRomaneios: RomaneioGerado[]) {
-    const saldosSalvos = localStorage.getItem("saldos");
-
-    if (!saldosSalvos || saldosSalvos === "undefined") return;
-
-    let listaSaldos: SaldoLicitado[] = [];
-
-    try {
-      listaSaldos = JSON.parse(saldosSalvos);
-    } catch {
-      return;
-    }
+    const listaSaldos = readStorage<SaldoLicitado[]>("saldos", []);
 
     const novosSaldos = listaSaldos.map((saldo) => {
       let totalUtilizado = 0;
@@ -274,26 +194,16 @@ export default function RomaneioPage() {
     }
 
     const confirmou = window.confirm(
-      indiceEditando === null
+      romaneioEditandoId === null
         ? "Deseja gerar o romaneio?"
         : "Deseja salvar a edição deste romaneio?"
     );
 
     if (!confirmou) return;
-
-    const romaneiosSalvos = localStorage.getItem("romaneios");
-
-    let lista: RomaneioGerado[] = [];
-
-    if (romaneiosSalvos && romaneiosSalvos !== "undefined") {
-      try {
-        lista = JSON.parse(romaneiosSalvos);
-      } catch {
-        lista = [];
-      }
-    }
+    const lista = hydrateRomaneios();
 
     const novoRomaneio: RomaneioGerado = {
+      id: romaneioEditandoId ?? createId("romaneio"),
       escola: escolaEscolhida.nome,
       semana,
       dataGeracao: new Date().toISOString(),
@@ -307,32 +217,64 @@ export default function RomaneioPage() {
         })),
     };
 
-    const novaLista = [...lista];
-    let indiceFinal = 0;
-
-    if (indiceEditando === null) {
-      novaLista.push(novoRomaneio);
-      indiceFinal = novaLista.length - 1;
-    } else {
-      novaLista[indiceEditando] = novoRomaneio;
-      indiceFinal = indiceEditando;
-    }
+    const novaLista =
+      romaneioEditandoId === null
+        ? [...lista, novoRomaneio]
+        : lista.map((romaneio) =>
+            romaneio.id === romaneioEditandoId ? novoRomaneio : romaneio
+          );
 
     localStorage.setItem("romaneios", JSON.stringify(novaLista));
     recalcularSaldosComBaseNosRomaneios(novaLista);
 
-    setIndiceEditando(null);
+    setRomaneioEditandoId(null);
     setSucesso("Romaneio salvo com sucesso.");
 
-    window.open(`/historico-romaneios/${indiceFinal}`, "_blank");
+    window.open(`/historico-romaneios/${novoRomaneio.id}`, "_blank");
   }
 
   function handleCancelarEdicao() {
     setEscolaSelecionada("");
     setSemana("");
     setItensAjustados([]);
-    setIndiceEditando(null);
+    setRomaneioEditandoId(null);
     limparMensagens();
+  }
+
+  function handleSelecionarEscola(novaEscola: string) {
+    setEscolaSelecionada(novaEscola);
+
+    if (romaneioEditandoId !== null) {
+      return;
+    }
+
+    setItensAjustados(
+      calcularItensRomaneio({
+        escolaSelecionada: novaEscola,
+        semana,
+        escolas,
+        cardapios,
+        preparacoes,
+      })
+    );
+  }
+
+  function handleSelecionarSemana(novaSemana: string) {
+    setSemana(novaSemana);
+
+    if (romaneioEditandoId !== null) {
+      return;
+    }
+
+    setItensAjustados(
+      calcularItensRomaneio({
+        escolaSelecionada,
+        semana: novaSemana,
+        escolas,
+        cardapios,
+        preparacoes,
+      })
+    );
   }
 
   const itensAtivos = itensAjustados.filter((item) => item.ativo).length;
@@ -343,13 +285,17 @@ export default function RomaneioPage() {
       .reduce((soma, item) => soma + item.quantidade, 0);
   }, [itensAjustados]);
 
+  if (!hydrated) {
+    return <section className={styles.page} />;
+  }
+
   return (
     <section className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
           <p className={styles.eyebrow}>Consolidação de envio</p>
           <h1 className={styles.title}>
-            {indiceEditando === null ? "Gerar Romaneio" : "Editar Romaneio"}
+            {romaneioEditandoId === null ? "Gerar Romaneio" : "Editar Romaneio"}
           </h1>
           <p className={styles.description}>
             Selecione a escola e a semana para consolidar os produtos com base
@@ -382,7 +328,7 @@ export default function RomaneioPage() {
               </p>
             </div>
 
-            {indiceEditando !== null && (
+            {romaneioEditandoId !== null && (
               <span className={styles.editingBadge}>Modo de edição</span>
             )}
           </div>
@@ -395,10 +341,7 @@ export default function RomaneioPage() {
                   id="escola"
                   value={escolaSelecionada}
                   onChange={(e) => {
-                    setEscolaSelecionada(e.target.value);
-                    if (indiceEditando === null) {
-                      setItensAjustados([]);
-                    }
+                    handleSelecionarEscola(e.target.value);
                     limparMensagens();
                   }}
                 >
@@ -417,10 +360,7 @@ export default function RomaneioPage() {
                   id="semana"
                   value={semana}
                   onChange={(e) => {
-                    setSemana(e.target.value);
-                    if (indiceEditando === null) {
-                      setItensAjustados([]);
-                    }
+                    handleSelecionarSemana(e.target.value);
                     limparMensagens();
                   }}
                 >
@@ -605,10 +545,10 @@ export default function RomaneioPage() {
                 onClick={handleGerarRomaneio}
                 className={styles.primaryButton}
               >
-                {indiceEditando === null ? "Gerar Romaneio" : "Salvar edição"}
+                {romaneioEditandoId === null ? "Gerar Romaneio" : "Salvar edição"}
               </button>
 
-              {indiceEditando !== null && (
+              {romaneioEditandoId !== null && (
                 <button
                   type="button"
                   onClick={handleCancelarEdicao}

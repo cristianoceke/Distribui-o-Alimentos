@@ -6,16 +6,53 @@ import type { Produto } from "@/types/produto";
 import type { SaldoLicitado } from "@/types/saldo";
 import type { PedidoSemanalGerado } from "@/types/pedido-semanal";
 import styles from "@/app/saldos/saldos.module.css";
+import { readStorage, useHydrated } from "@/utils/storage";
+
+function readProdutos() {
+  return readStorage<Produto[]>("produtos", []);
+}
+
+function readSaldos() {
+  return readStorage<SaldoLicitado[]>("saldos", []);
+}
+
+function recalcularUtilizadoComPedidos(listaBase: SaldoLicitado[]) {
+  const pedidos = readStorage<PedidoSemanalGerado[]>("pedidos-semanais", []);
+
+  return listaBase.map((saldo) => {
+    let totalUtilizado = 0;
+
+    pedidos.forEach((pedido) => {
+      pedido.itens.forEach((item) => {
+        if (item.produto === saldo.produto && item.grupo === saldo.grupo) {
+          totalUtilizado += item.quantidade;
+        }
+      });
+    });
+
+    return {
+      ...saldo,
+      quantidadeUtilizada: totalUtilizado,
+    };
+  });
+}
 
 export default function SaldosPage() {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [saldos, setSaldos] = useState<SaldoLicitado[]>([]);
-  const [carregouSaldos, setCarregouSaldos] = useState(false);
+  const [produtos] = useState<Produto[]>(readProdutos);
+  const [saldos, setSaldos] = useState<SaldoLicitado[]>(() =>
+    recalcularUtilizadoComPedidos(
+      readSaldos().map((saldo) => ({
+        ...saldo,
+        quantidadeUtilizada: saldo.quantidadeUtilizada ?? 0,
+      }))
+    )
+  );
 
   const [grupo, setGrupo] = useState("");
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
+  const hydrated = useHydrated();
 
   const gruposFixos = [
     "creche 6 a 11 meses",
@@ -28,74 +65,12 @@ export default function SaldosPage() {
   ];
 
   useEffect(() => {
-    const produtosSalvos = localStorage.getItem("produtos");
-    if (produtosSalvos) {
-      setProdutos(JSON.parse(produtosSalvos));
-    }
-  }, []);
-
-  useEffect(() => {
-    const saldosSalvos = localStorage.getItem("saldos");
-
-    if (!saldosSalvos || saldosSalvos === "undefined") {
-      setCarregouSaldos(true);
-      return;
-    }
-
-    try {
-      setSaldos(JSON.parse(saldosSalvos));
-    } catch {
-      setSaldos([]);
-    }
-
-    setCarregouSaldos(true);
-  }, []);
-
-  useEffect(() => {
-    if (!carregouSaldos) return;
     localStorage.setItem("saldos", JSON.stringify(saldos));
-  }, [saldos, carregouSaldos]);
+  }, [saldos]);
 
   function recalcularUtilizado(listaBase: SaldoLicitado[]) {
-    const pedidosSalvos = localStorage.getItem("pedidos-semanais");
-
-    if (!pedidosSalvos || pedidosSalvos === "undefined") {
-      return listaBase.map((saldo) => ({
-        ...saldo,
-        quantidadeUtilizada: 0,
-      }));
-    }
-
-    let pedidos: PedidoSemanalGerado[] = [];
-
-    try {
-      pedidos = JSON.parse(pedidosSalvos);
-    } catch {
-      return listaBase;
-    }
-
-    return listaBase.map((saldo) => {
-      let totalUtilizado = 0;
-
-      pedidos.forEach((pedido) => {
-        pedido.itens.forEach((item) => {
-          if (item.produto === saldo.produto && item.grupo === saldo.grupo) {
-            totalUtilizado += item.quantidade;
-          }
-        });
-      });
-
-      return {
-        ...saldo,
-        quantidadeUtilizada: totalUtilizado,
-      };
-    });
+    return recalcularUtilizadoComPedidos(listaBase);
   }
-
-  useEffect(() => {
-    if (!carregouSaldos) return;
-    setSaldos((atual) => recalcularUtilizado(atual));
-  }, [carregouSaldos]);
 
   function limparFormulario() {
     setGrupo("");
@@ -134,7 +109,7 @@ export default function SaldosPage() {
       quantidadeUtilizada: 0,
     };
 
-    let novaLista = [...saldos];
+    const novaLista = [...saldos];
 
     if (indiceEditando === null) {
       novaLista.push(novoSaldo);
@@ -203,6 +178,10 @@ export default function SaldosPage() {
     if (status === "critico") return styles.statusCritical;
     if (status === "atencao") return styles.statusWarning;
     return styles.statusOk;
+  }
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
   }
 
   return (
