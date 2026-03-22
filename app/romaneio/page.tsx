@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Escola } from "@/types/escola";
 import type { Cardapio } from "@/types/cardapio";
@@ -97,7 +97,7 @@ function calcularItensRomaneio(params: {
   }));
 }
 
-export default function RomaneioPage() {
+function RomaneioPageContent() {
   const searchParams = useSearchParams();
   const editarParam = searchParams.get("editar");
 
@@ -562,5 +562,13 @@ export default function RomaneioPage() {
         )}
       </section>
     </section>
+  );
+}
+
+export default function RomaneioPage() {
+  return (
+    <Suspense fallback={<section className={styles.page} />}>
+      <RomaneioPageContent />
+    </Suspense>
   );
 }

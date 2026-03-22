@@ -37,8 +37,8 @@ export default function AppShell({ children }: AppShellProps) {
               <Image
                 src="/logo.png"
                 alt="Lunutrix"
-                width={50}
-                height={44}
+                width={100}
+                height={68}
                 priority
               />
             </div>
