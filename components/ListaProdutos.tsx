@@ -1,5 +1,6 @@
 "use client";
 
+import { Pencil, Trash2, X, Package2 } from "lucide-react";
 import type { Produto } from "@/types/produto";
 import styles from "@/components/ListaProdutos.module.css";
 
@@ -22,9 +23,7 @@ export default function ListaProdutos({
     return (
       <div className={styles.emptyState}>
         <h3>Nenhum produto cadastrado</h3>
-        <p>
-          Cadastre os primeiros alimentos para começar a montar as preparações.
-        </p>
+        <p>Adicione o primeiro produto para montar sua base de alimentos.</p>
       </div>
     );
   }
@@ -42,11 +41,17 @@ export default function ListaProdutos({
             }`}
           >
             <div className={styles.productCardHeader}>
-              <div>
-                <h3 className={styles.productName}>{produto.nome}</h3>
-                <p className={styles.productMeta}>
-                  Unidade: <strong>{produto.unidade}</strong>
-                </p>
+              <div className={styles.productMainInfo}>
+                <div className={styles.productIcon}>
+                  <Package2 size={18} />
+                </div>
+
+                <div>
+                  <h3 className={styles.productName}>{produto.nome}</h3>
+                  <p className={styles.productMeta}>
+                    Unidade: {produto.unidade}
+                  </p>
+                </div>
               </div>
 
               <span className={styles.categoryBadge}>{produto.categoria}</span>
@@ -58,7 +63,8 @@ export default function ListaProdutos({
                 onClick={() => onEditarProduto(index)}
                 className={styles.secondaryButton}
               >
-                Editar
+                <Pencil size={18} />
+                <span>Editar</span>
               </button>
 
               {estaEditando && (
@@ -67,7 +73,8 @@ export default function ListaProdutos({
                   onClick={onCancelarEdicao}
                   className={styles.warningButton}
                 >
-                  Cancelar
+                  <X size={18} />
+                  <span>Cancelar</span>
                 </button>
               )}
 
@@ -77,13 +84,15 @@ export default function ListaProdutos({
                   const confirmou = window.confirm(
                     "Tem certeza que deseja remover este produto?"
                   );
+
                   if (confirmou) {
                     onRemoverProduto(index);
                   }
                 }}
                 className={styles.dangerButton}
               >
-                Remover
+                <Trash2 size={18} />
+                <span>Remover</span>
               </button>
             </div>
           </article>

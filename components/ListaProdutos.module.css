@@ -51,6 +51,24 @@
   margin-bottom: 16px;
 }
 
+.productMainInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.productIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--primary-50);
+  color: var(--primary-800);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .productName {
   font-size: 1.05rem;
   color: var(--gray-900);
@@ -69,12 +87,12 @@
   min-height: 34px;
   padding: 0 12px;
   border-radius: 999px;
-  background: #eefcf7;
-  color: var(--success);
+  background: var(--primary-50);
+  color: var(--primary-900);
   font-size: 0.82rem;
   font-weight: 700;
-  text-transform: capitalize;
   white-space: nowrap;
+  text-transform: capitalize;
 }
 
 .cardActions {
@@ -86,13 +104,17 @@
 .secondaryButton,
 .warningButton,
 .dangerButton {
-  height: 44px;
+  height: 46px;
   padding: 0 18px;
   border-radius: 14px;
   border: none;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .secondaryButton {
@@ -124,11 +146,21 @@
   filter: brightness(0.98);
 }
 
-/* TABLET */
+.secondaryButton svg,
+.warningButton svg,
+.dangerButton svg {
+  flex-shrink: 0;
+}
+
+.secondaryButton span,
+.warningButton span,
+.dangerButton span {
+  line-height: 1;
+}
+
 @media (max-width: 900px) {
   .productCardHeader {
     flex-direction: column;
-    align-items: flex-start;
   }
 
   .categoryBadge {
@@ -136,7 +168,6 @@
   }
 }
 
-/* MOBILE */
 @media (max-width: 720px) {
   .productCard {
     padding: 16px;
@@ -149,28 +180,14 @@
     margin-bottom: 14px;
   }
 
-  .productName {
-    font-size: 1rem;
-  }
-
-  .productMeta {
-    font-size: 0.9rem;
-  }
-
   .cardActions {
     flex-direction: column;
-    gap: 8px;
   }
 
   .secondaryButton,
   .warningButton,
   .dangerButton {
     width: 100%;
-    height: 46px;
-  }
-
-  .categoryBadge {
-    align-self: flex-start;
   }
 
   .emptyState {

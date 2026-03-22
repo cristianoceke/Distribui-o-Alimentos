@@ -52,6 +52,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-decoration: none;
   transition: all 0.2s ease;
 }
@@ -263,6 +264,10 @@
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .primaryButton,
@@ -305,6 +310,24 @@
 
 .dangerButton:hover {
   filter: brightness(0.98);
+}
+
+.backButton svg,
+.primaryButton svg,
+.secondaryButton svg,
+.warningButton svg,
+.dangerButton svg,
+.saveRecipeButton svg {
+  flex-shrink: 0;
+}
+
+.backButton span,
+.primaryButton span,
+.secondaryButton span,
+.warningButton span,
+.dangerButton span,
+.saveRecipeButton span {
+  line-height: 1;
 }
 
 .emptyState {

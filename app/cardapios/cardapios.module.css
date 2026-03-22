@@ -185,6 +185,8 @@
   border-top: 1px solid var(--gray-200);
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .primaryButton,
@@ -197,6 +199,11 @@
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s ease;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .primaryButton,
@@ -380,7 +387,8 @@
   }
 
   .actions,
-  .cardActions {
+  .cardActions,
+  .footerActions {
     flex-direction: column;
   }
 

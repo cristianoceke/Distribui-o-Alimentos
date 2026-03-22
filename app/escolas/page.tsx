@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import type { Escola, GrupoEscola } from "@/types/escola";
 import styles from "@/app/escolas/escola.module.css";
 
@@ -299,7 +300,10 @@ export default function EscolasPage() {
 
             <div className={styles.actions}>
               <button type="submit" className={styles.primaryButton}>
-                {indiceEditando === null ? "Adicionar escola" : "Salvar edição"}
+                {indiceEditando === null ? <Plus size={18} /> : <Pencil size={18} />}
+                <span>
+                  {indiceEditando === null ? "Adicionar escola" : "Salvar edição"}
+                </span>
               </button>
 
               {indiceEditando !== null && (
@@ -308,7 +312,8 @@ export default function EscolasPage() {
                   onClick={handleCancelarEdicao}
                   className={styles.warningButton}
                 >
-                  Cancelar edição
+                  <X size={18} />
+                  <span>Cancelar edição</span>
                 </button>
               )}
             </div>
@@ -375,7 +380,8 @@ export default function EscolasPage() {
                         onClick={() => handleEditarEscola(index)}
                         className={styles.secondaryButton}
                       >
-                        Editar
+                        <Pencil size={18} />
+                        <span>Editar</span>
                       </button>
 
                       {estaEditando && (
@@ -384,7 +390,8 @@ export default function EscolasPage() {
                           onClick={handleCancelarEdicao}
                           className={styles.warningButton}
                         >
-                          Cancelar
+                          <X size={18} />
+                          <span>Cancelar</span>
                         </button>
                       )}
 
@@ -400,7 +407,8 @@ export default function EscolasPage() {
                         }}
                         className={styles.dangerButton}
                       >
-                        Remover
+                        <Trash2 size={18} />
+                        <span>Remover</span>
                       </button>
                     </div>
                   </article>

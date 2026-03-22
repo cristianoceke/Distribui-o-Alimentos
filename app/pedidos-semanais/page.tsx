@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  Save,
+  X,
+  Pencil,
+  Trash2,
+  ExternalLink,
+  FileText,
+  Users,
+  CalendarDays,
+} from "lucide-react";
 import type { Escola } from "@/types/escola";
 import type { Cardapio } from "@/types/cardapio";
 import type { Preparacao } from "@/types/preparacao";
@@ -10,6 +20,7 @@ import type {
   ItemPedidoSemanal,
   PedidoSemanalGerado,
 } from "@/types/pedido-semanal";
+import styles from "./pedidos-semanais.module.css";
 
 type ItemAjustado = ItemPedidoSemanal;
 
@@ -36,7 +47,9 @@ export default function PedidosSemanaisPage() {
 
   const [itensAjustados, setItensAjustados] = useState<ItemAjustado[]>([]);
 
-  const [pedidosGerados, setPedidosGerados] = useState<PedidoSemanalGerado[]>([]);
+  const [pedidosGerados, setPedidosGerados] = useState<PedidoSemanalGerado[]>(
+    []
+  );
   const [carregouPedidos, setCarregouPedidos] = useState(false);
   const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
 
@@ -323,164 +336,300 @@ export default function PedidosSemanaisPage() {
     });
   }
 
+  function getStatusClass(status: string) {
+    if (status === "CRÍTICO") return styles.statusCritical;
+    if (status === "ATENÇÃO") return styles.statusWarning;
+    return styles.statusOk;
+  }
+
   return (
-    <main>
-      <h1>Pedidos Semanais</h1>
-      <p>Calcule o pedido da rede por grupo e semana.</p>
-
-      <div>
-        <label>Grupo</label>
-        <select
-          value={grupoSelecionado}
-          onChange={(event) => setGrupoSelecionado(event.target.value)}
-        >
-          <option value="">Selecione o grupo</option>
-          {grupos.map((grupo) => (
-            <option key={grupo} value={grupo}>
-              {grupo}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label>Semana</label>
-        <select
-          value={semanaSelecionada}
-          onChange={(event) => setSemanaSelecionada(event.target.value)}
-        >
-          <option value="">Selecione a semana</option>
-          {semanas.map((semana) => (
-            <option key={semana} value={semana}>
-              {semana}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {grupoSelecionado && (
+    <section className={styles.page}>
+      <div className={styles.pageHeader}>
         <div>
-          <h2>Resumo</h2>
-          <p>Grupo: {grupoSelecionado}</p>
-          <p>Semana: {semanaSelecionada || "-"}</p>
-          <p>Total de alunos da rede neste grupo: {totalAlunosGrupo}</p>
+          <p className={styles.eyebrow}>Distribuição semanal</p>
+          <h1 className={styles.title}>Pedidos Semanais</h1>
+          <p className={styles.description}>
+            Calcule o pedido da rede por grupo e semana, revise os itens e
+            acompanhe o histórico dos pedidos gerados.
+          </p>
         </div>
-      )}
 
-      <h2>Itens do pedido</h2>
+        <div className={styles.stats}>
+          <article className={styles.statCard}>
+            <span className={styles.statLabel}>Pedidos gerados</span>
+            <strong className={styles.statValue}>{pedidosGerados.length}</strong>
+          </article>
 
-      {itensAjustados.length === 0 ? (
-        <p>Nenhum item encontrado para esse grupo e semana.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Usar</th>
-              <th>Produto</th>
-              <th>Unidade</th>
-              <th>Quantidade</th>
-              <th>Saldo disponível</th>
-              <th>Situação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {itensAjustados.map((item, index) => {
-              const saldoDisponivel = getSaldoDoItem(item.produto, item.grupo);
-              const status = getStatusDoPedido(
-                item.produto,
-                item.grupo,
-                item.quantidade
-              );
+          <article className={styles.statCard}>
+            <span className={styles.statLabel}>Itens ajustados</span>
+            <strong className={styles.statValue}>{itensAjustados.length}</strong>
+          </article>
+        </div>
+      </div>
 
-              let cor = "";
-              if (status === "CRÍTICO") cor = "#ffcccc";
-              else if (status === "ATENÇÃO") cor = "#fff3cd";
-              else cor = "#d4edda";
-
-              return (
-                <tr
-                  key={`${item.grupo}-${item.produto}-${index}`}
-                  style={{ backgroundColor: cor }}
-                >
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={item.ativo}
-                      onChange={() => toggleItem(index)}
-                    />
-                  </td>
-                  <td style={{ opacity: item.ativo ? 1 : 0.4 }}>
-                    {item.produto}
-                  </td>
-                  <td style={{ opacity: item.ativo ? 1 : 0.4 }}>
-                    {item.unidade}
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={item.quantidade}
-                      onChange={(event) =>
-                        handleAlterarQuantidade(index, event.target.value)
-                      }
-                      style={{ opacity: item.ativo ? 1 : 0.4 }}
-                    />
-                  </td>
-                  <td>{saldoDisponivel.toFixed(2)}</td>
-                  <td>{status}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-
-      <button type="button" onClick={handleGerarPedido}>
-        {indiceEditando === null ? "Gerar pedido semanal" : "Salvar edição"}
-      </button>
-
-      {indiceEditando !== null && (
-        <button type="button" onClick={handleCancelarEdicao}>
-          Cancelar edição
-        </button>
-      )}
-
-      <hr />
-
-      <h2>Histórico de pedidos</h2>
-
-      {pedidosGerados.length === 0 ? (
-        <p>Nenhum pedido semanal gerado ainda.</p>
-      ) : (
-        <div>
-          {pedidosGerados.map((pedido, index) => (
-            <div key={index}>
-              <p>
-                <strong>{pedido.grupo}</strong> - Semana {pedido.semana}
+      <div className={styles.contentGrid}>
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2 className={styles.panelTitle}>
+                {indiceEditando === null ? "Novo pedido" : "Editar pedido"}
+              </h2>
+              <p className={styles.panelText}>
+                Selecione o grupo e a semana para gerar o pedido automaticamente.
               </p>
-              <p>{formatarData(pedido.dataGeracao)}</p>
+            </div>
 
-              <div>
-                <Link
-                  href={`/pedidos-semanais/${index}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Abrir
-                </Link>{" "}
-                <button type="button" onClick={() => handleEditarPedido(index)}>
-                  Editar
-                </button>{" "}
+            {indiceEditando !== null && (
+              <span className={styles.editingBadge}>Modo de edição</span>
+            )}
+          </div>
+
+          <div className={styles.form}>
+            <div className={styles.field}>
+              <label htmlFor="grupo">Grupo</label>
+              <select
+                id="grupo"
+                value={grupoSelecionado}
+                onChange={(event) => setGrupoSelecionado(event.target.value)}
+              >
+                <option value="">Selecione o grupo</option>
+                {grupos.map((grupo) => (
+                  <option key={grupo} value={grupo}>
+                    {grupo}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="semana">Semana</label>
+              <select
+                id="semana"
+                value={semanaSelecionada}
+                onChange={(event) => setSemanaSelecionada(event.target.value)}
+              >
+                <option value="">Selecione a semana</option>
+                {semanas.map((semana) => (
+                  <option key={semana} value={semana}>
+                    Semana {semana}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {grupoSelecionado && (
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryItem}>
+                  <Users size={18} />
+                  <div>
+                    <span className={styles.summaryLabel}>Grupo</span>
+                    <strong className={styles.summaryValue}>
+                      {grupoSelecionado}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className={styles.summaryItem}>
+                  <CalendarDays size={18} />
+                  <div>
+                    <span className={styles.summaryLabel}>Semana</span>
+                    <strong className={styles.summaryValue}>
+                      {semanaSelecionada || "-"}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className={styles.summaryItem}>
+                  <FileText size={18} />
+                  <div>
+                    <span className={styles.summaryLabel}>Alunos na rede</span>
+                    <strong className={styles.summaryValue}>
+                      {totalAlunosGrupo}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className={styles.actions}>
+              <button
+                type="button"
+                onClick={handleGerarPedido}
+                className={styles.primaryButton}
+              >
+                <Save size={18} />
+                <span>
+                  {indiceEditando === null
+                    ? "Gerar pedido semanal"
+                    : "Salvar edição"}
+                </span>
+              </button>
+
+              {indiceEditando !== null && (
                 <button
                   type="button"
-                  onClick={() => handleExcluirPedido(index)}
+                  onClick={handleCancelarEdicao}
+                  className={styles.warningButton}
                 >
-                  Excluir
+                  <X size={18} />
+                  <span>Cancelar edição</span>
                 </button>
-              </div>
+              )}
             </div>
-          ))}
+          </div>
+        </section>
+
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2 className={styles.panelTitle}>Itens do pedido</h2>
+              <p className={styles.panelText}>
+                Revise os itens calculados, ajuste quantidades e acompanhe o saldo.
+              </p>
+            </div>
+          </div>
+
+          {itensAjustados.length === 0 ? (
+            <div className={styles.emptyState}>
+              <h3>Nenhum item encontrado</h3>
+              <p>Selecione um grupo e uma semana com cardápio vinculado.</p>
+            </div>
+          ) : (
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Usar</th>
+                    <th>Produto</th>
+                    <th>Unidade</th>
+                    <th>Quantidade</th>
+                    <th>Saldo disponível</th>
+                    <th>Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itensAjustados.map((item, index) => {
+                    const saldoDisponivel = getSaldoDoItem(item.produto, item.grupo);
+                    const status = getStatusDoPedido(
+                      item.produto,
+                      item.grupo,
+                      item.quantidade
+                    );
+
+                    return (
+                      <tr
+                        key={`${item.grupo}-${item.produto}-${index}`}
+                        className={!item.ativo ? styles.rowInactive : ""}
+                      >
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={item.ativo}
+                            onChange={() => toggleItem(index)}
+                          />
+                        </td>
+
+                        <td>{item.produto}</td>
+                        <td>{item.unidade}</td>
+
+                        <td>
+                          <input
+                            className={styles.quantityInput}
+                            type="number"
+                            value={item.quantidade}
+                            onChange={(event) =>
+                              handleAlterarQuantidade(index, event.target.value)
+                            }
+                          />
+                        </td>
+
+                        <td>{saldoDisponivel.toFixed(2)}</td>
+
+                        <td>
+                          <span
+                            className={`${styles.statusBadge} ${getStatusClass(
+                              status
+                            )}`}
+                          >
+                            {status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+
+      <section className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <div>
+            <h2 className={styles.panelTitle}>Histórico de pedidos</h2>
+            <p className={styles.panelText}>
+              Abra, edite ou exclua pedidos semanais já gerados.
+            </p>
+          </div>
         </div>
-      )}
-    </main>
+
+        {pedidosGerados.length === 0 ? (
+          <div className={styles.emptyState}>
+            <h3>Nenhum pedido semanal gerado ainda</h3>
+            <p>Quando você gerar um pedido, ele aparecerá aqui.</p>
+          </div>
+        ) : (
+          <div className={styles.historyList}>
+            {pedidosGerados.map((pedido, index) => (
+              <article key={index} className={styles.historyCard}>
+                <div className={styles.historyCardHeader}>
+                  <div>
+                    <h3 className={styles.historyTitle}>{pedido.grupo}</h3>
+                    <p className={styles.historyMeta}>
+                      Semana {pedido.semana} • {formatarData(pedido.dataGeracao)}
+                    </p>
+                  </div>
+
+                  <span className={styles.historyBadge}>
+                    {pedido.itens.length} item{pedido.itens.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                <div className={styles.historyActions}>
+                  <Link
+                    href={`/pedidos-semanais/${index}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.linkButton}
+                  >
+                    <ExternalLink size={18} />
+                    <span>Abrir</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => handleEditarPedido(index)}
+                    className={styles.secondaryButton}
+                  >
+                    <Pencil size={18} />
+                    <span>Editar</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleExcluirPedido(index)}
+                    className={styles.dangerButton}
+                  >
+                    <Trash2 size={18} />
+                    <span>Excluir</span>
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </section>
   );
 }

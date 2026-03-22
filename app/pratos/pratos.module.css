@@ -189,7 +189,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-decoration: none;
+}
+
+.primaryButton svg,
+.secondaryButton svg,
+.warningButton svg,
+.dangerButton svg,
+.linkButton svg {
+  flex-shrink: 0;
 }
 
 .primaryButton {

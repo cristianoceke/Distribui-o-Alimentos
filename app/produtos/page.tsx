@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Plus, Save, X } from "lucide-react";
 import ListaProdutos from "@/components/ListaProdutos";
 import type { Produto } from "@/types/produto";
 import styles from "@/app/produtos/produtos.module.css";
@@ -28,9 +29,11 @@ export default function ProdutosPage() {
 
   useEffect(() => {
     const produtosSalvos = localStorage.getItem("produtos");
+
     if (produtosSalvos) {
       setProdutos(JSON.parse(produtosSalvos));
     }
+
     setCarregouProdutos(true);
   }, []);
 
@@ -229,7 +232,10 @@ export default function ProdutosPage() {
 
             <div className={styles.actions}>
               <button type="submit" className={styles.primaryButton}>
-                {indiceEditando === null ? "Adicionar produto" : "Salvar edição"}
+                {indiceEditando === null ? <Plus size={18} /> : <Save size={18} />}
+                <span>
+                  {indiceEditando === null ? "Adicionar produto" : "Salvar edição"}
+                </span>
               </button>
 
               {indiceEditando !== null && (
@@ -238,7 +244,8 @@ export default function ProdutosPage() {
                   onClick={handleCancelarEdicao}
                   className={styles.warningButton}
                 >
-                  Cancelar edição
+                  <X size={18} />
+                  <span>Cancelar edição</span>
                 </button>
               )}
             </div>

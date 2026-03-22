@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import {
+  Plus,
+  Save,
+  Pencil,
+  Trash2,
+  X,
+  ArrowLeft,
+} from "lucide-react";
 import styles from "./receita.module.css";
 
 type ProdutoReceita = {
@@ -158,8 +166,11 @@ export default function ReceitaPreparacaoPage() {
     listaPreparacoes[indiceNumero].ingredientes = ingredientes;
     localStorage.setItem("preparacoes", JSON.stringify(listaPreparacoes));
 
+    setProdutoSelecionado("");
+    setQuantidade("");
     setErro("");
     setSucesso("Receita salva com sucesso.");
+    setIndiceEditando(null);
   }
 
   const totalIngredientes = ingredientes.length;
@@ -184,7 +195,8 @@ export default function ReceitaPreparacaoPage() {
 
         <div className={styles.headerActions}>
           <Link href="/pratos" className={styles.backButton}>
-            Voltar para preparações
+            <ArrowLeft size={18} />
+            <span>Voltar para preparações</span>
           </Link>
         </div>
       </div>
@@ -276,9 +288,12 @@ export default function ReceitaPreparacaoPage() {
                 onClick={handleAdicionarIngrediente}
                 className={styles.primaryButton}
               >
-                {indiceEditando === null
-                  ? "Adicionar ingrediente"
-                  : "Salvar edição"}
+                {indiceEditando === null ? <Plus size={18} /> : <Save size={18} />}
+                <span>
+                  {indiceEditando === null
+                    ? "Adicionar ingrediente"
+                    : "Salvar edição"}
+                </span>
               </button>
 
               {indiceEditando !== null && (
@@ -287,7 +302,8 @@ export default function ReceitaPreparacaoPage() {
                   onClick={handleCancelarEdicao}
                   className={styles.warningButton}
                 >
-                  Cancelar edição
+                  <X size={18} />
+                  <span>Cancelar edição</span>
                 </button>
               )}
             </div>
@@ -343,7 +359,8 @@ export default function ReceitaPreparacaoPage() {
                           onClick={() => handleEditarIngrediente(indexAtual)}
                           className={styles.secondaryButton}
                         >
-                          Editar
+                          <Pencil size={18} />
+                          <span>Editar</span>
                         </button>
 
                         {estaEditando && (
@@ -352,7 +369,8 @@ export default function ReceitaPreparacaoPage() {
                             onClick={handleCancelarEdicao}
                             className={styles.warningButton}
                           >
-                            Cancelar
+                            <X size={18} />
+                            <span>Cancelar</span>
                           </button>
                         )}
 
@@ -369,7 +387,8 @@ export default function ReceitaPreparacaoPage() {
                           }}
                           className={styles.dangerButton}
                         >
-                          Remover
+                          <Trash2 size={18} />
+                          <span>Remover</span>
                         </button>
                       </div>
                     </article>
@@ -383,7 +402,8 @@ export default function ReceitaPreparacaoPage() {
                   onClick={handleSalvarReceita}
                   className={styles.saveRecipeButton}
                 >
-                  Salvar receita
+                  <Save size={18} />
+                  <span>Salvar receita</span>
                 </button>
               </div>
             </>

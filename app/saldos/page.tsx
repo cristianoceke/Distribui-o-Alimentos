@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Pencil, Plus, Save, Trash2, X, Boxes } from "lucide-react";
 import type { Produto } from "@/types/produto";
 import type { SaldoLicitado } from "@/types/saldo";
 import type { PedidoSemanalGerado } from "@/types/pedido-semanal";
+import styles from "@/app/saldos/saldos.module.css";
 
 export default function SaldosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -92,9 +94,15 @@ export default function SaldosPage() {
 
   useEffect(() => {
     if (!carregouSaldos) return;
-
     setSaldos((atual) => recalcularUtilizado(atual));
   }, [carregouSaldos]);
+
+  function limparFormulario() {
+    setGrupo("");
+    setProdutoSelecionado("");
+    setQuantidade("");
+    setIndiceEditando(null);
+  }
 
   function handleSalvarSaldo() {
     if (!grupo || !produtoSelecionado || !quantidade) {
@@ -139,11 +147,7 @@ export default function SaldosPage() {
 
     const listaRecalculada = recalcularUtilizado(novaLista);
     setSaldos(listaRecalculada);
-
-    setGrupo("");
-    setProdutoSelecionado("");
-    setQuantidade("");
-    setIndiceEditando(null);
+    limparFormulario();
   }
 
   function handleEditar(indexParaEditar: number) {
@@ -163,149 +167,247 @@ export default function SaldosPage() {
     setSaldos(novaLista);
 
     if (indiceEditando === indexParaRemover) {
-      setGrupo("");
-      setProdutoSelecionado("");
-      setQuantidade("");
-      setIndiceEditando(null);
+      limparFormulario();
     }
   }
 
   function handleCancelarEdicao() {
-    setGrupo("");
-    setProdutoSelecionado("");
-    setQuantidade("");
-    setIndiceEditando(null);
+    limparFormulario();
   }
 
   function getStatus(item: SaldoLicitado) {
     const saldoRestante = item.quantidadeContratada - item.quantidadeUtilizada;
-    const percentual = item.quantidadeContratada > 0
-      ? (saldoRestante / item.quantidadeContratada) * 100
-      : 0;
+    const percentual =
+      item.quantidadeContratada > 0
+        ? (saldoRestante / item.quantidadeContratada) * 100
+        : 0;
 
     if (saldoRestante <= 0) return "critico";
     if (percentual <= 20) return "atencao";
     return "ok";
   }
 
+  const totalSaldoCadastrado = useMemo(() => saldos.length, [saldos]);
+
+  const totalProdutosComCritico = useMemo(() => {
+    return saldos.filter((item) => getStatus(item) === "critico").length;
+  }, [saldos]);
+
+  function getStatusLabel(status: string) {
+    if (status === "critico") return "CRÍTICO";
+    if (status === "atencao") return "ATENÇÃO";
+    return "OK";
+  }
+
+  function getStatusClass(status: string) {
+    if (status === "critico") return styles.statusCritical;
+    if (status === "atencao") return styles.statusWarning;
+    return styles.statusOk;
+  }
+
   return (
-    <main>
-      <h1>Saldo da Licitação</h1>
-      <p>Cadastre a quantidade licitada por grupo e produto.</p>
+    <section className={styles.page}>
+      <div className={styles.pageHeader}>
+        <div>
+          <p className={styles.eyebrow}>Controle de consumo</p>
+          <h1 className={styles.title}>Saldo da Licitação</h1>
+          <p className={styles.description}>
+            Cadastre a quantidade licitada por grupo e produto, acompanhe o
+            consumo e identifique rapidamente itens em atenção.
+          </p>
+        </div>
 
-      <h2>{indiceEditando === null ? "Novo cadastro" : "Editar saldo"}</h2>
+        <div className={styles.stats}>
+          <article className={styles.statCard}>
+            <span className={styles.statLabel}>Saldos cadastrados</span>
+            <strong className={styles.statValue}>{totalSaldoCadastrado}</strong>
+          </article>
 
-      <div>
-        <label>Grupo</label>
-        <select value={grupo} onChange={(e) => setGrupo(e.target.value)}>
-          <option value="">Selecione</option>
-          {gruposFixos.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+          <article className={styles.statCard}>
+            <span className={styles.statLabel}>Itens críticos</span>
+            <strong className={styles.statValue}>{totalProdutosComCritico}</strong>
+          </article>
+        </div>
       </div>
 
-      <div>
-        <label>Produto</label>
-        <select
-          value={produtoSelecionado}
-          onChange={(e) => setProdutoSelecionado(e.target.value)}
-        >
-          <option value="">Selecione</option>
-          {produtos.map((produto) => (
-            <option key={produto.nome} value={produto.nome}>
-              {produto.nome}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className={styles.contentGrid}>
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2 className={styles.panelTitle}>
+                {indiceEditando === null ? "Novo saldo" : "Editar saldo"}
+              </h2>
+              <p className={styles.panelText}>
+                Informe grupo, produto e quantidade licitada.
+              </p>
+            </div>
 
-      <div>
-        <label>Quantidade licitada</label>
-        <input
-          type="number"
-          value={quantidade}
-          onChange={(e) => setQuantidade(e.target.value)}
-        />
-      </div>
+            {indiceEditando !== null && (
+              <span className={styles.editingBadge}>Modo de edição</span>
+            )}
+          </div>
 
-      <button type="button" onClick={handleSalvarSaldo}>
-        {indiceEditando === null ? "Adicionar" : "Salvar edição"}
-      </button>
+          <div className={styles.form}>
+            <div className={styles.field}>
+              <label htmlFor="grupo">Grupo</label>
+              <select
+                id="grupo"
+                value={grupo}
+                onChange={(e) => setGrupo(e.target.value)}
+              >
+                <option value="">Selecione</option>
+                {gruposFixos.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      {indiceEditando !== null && (
-        <button type="button" onClick={handleCancelarEdicao}>
-          Cancelar edição
-        </button>
-      )}
+            <div className={styles.field}>
+              <label htmlFor="produto">Produto</label>
+              <select
+                id="produto"
+                value={produtoSelecionado}
+                onChange={(e) => setProdutoSelecionado(e.target.value)}
+              >
+                <option value="">Selecione</option>
+                {produtos.map((produto) => (
+                  <option key={produto.nome} value={produto.nome}>
+                    {produto.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      <h2>Controle de saldo</h2>
+            <div className={styles.field}>
+              <label htmlFor="quantidade">Quantidade licitada</label>
+              <input
+                id="quantidade"
+                type="number"
+                value={quantidade}
+                onChange={(e) => setQuantidade(e.target.value)}
+                placeholder="Ex.: 150"
+              />
+            </div>
 
-      {saldos.length === 0 ? (
-        <p>Nenhum saldo cadastrado.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Grupo</th>
-              <th>Produto</th>
-              <th>Unidade</th>
-              <th>Contratado</th>
-              <th>Utilizado</th>
-              <th>Saldo</th>
-              <th>Status</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {saldos.map((item, index) => {
-              const saldoRestante =
-                item.quantidadeContratada - item.quantidadeUtilizada;
+            <div className={styles.actions}>
+              <button
+                type="button"
+                onClick={handleSalvarSaldo}
+                className={styles.primaryButton}
+              >
+                {indiceEditando === null ? <Plus size={18} /> : <Save size={18} />}
+                <span>
+                  {indiceEditando === null ? "Adicionar saldo" : "Salvar edição"}
+                </span>
+              </button>
 
-              const status = getStatus(item);
-
-              let cor = "";
-              let textoStatus = "";
-
-              if (status === "critico") {
-                cor = "#ffcccc";
-                textoStatus = "CRÍTICO";
-              } else if (status === "atencao") {
-                cor = "#fff3cd";
-                textoStatus = "ATENÇÃO";
-              } else {
-                cor = "#d4edda";
-                textoStatus = "OK";
-              }
-
-              return (
-                <tr
-                  key={`${item.grupo}-${item.produto}-${index}`}
-                  style={{ backgroundColor: cor }}
+              {indiceEditando !== null && (
+                <button
+                  type="button"
+                  onClick={handleCancelarEdicao}
+                  className={styles.warningButton}
                 >
-                  <td>{item.grupo}</td>
-                  <td>{item.produto}</td>
-                  <td>{item.unidade}</td>
-                  <td>{item.quantidadeContratada}</td>
-                  <td>{item.quantidadeUtilizada.toFixed(2)}</td>
-                  <td>{saldoRestante.toFixed(2)}</td>
-                  <td>{textoStatus}</td>
-                  <td>
-                    <button type="button" onClick={() => handleEditar(index)}>
-                      Editar
-                    </button>{" "}
-                    <button type="button" onClick={() => handleRemover(index)}>
-                      Remover
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-    </main>
+                  <X size={18} />
+                  <span>Cancelar edição</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2 className={styles.panelTitle}>Controle de saldo</h2>
+              <p className={styles.panelText}>
+                Visualize o saldo contratado, utilizado e restante por item.
+              </p>
+            </div>
+          </div>
+
+          {saldos.length === 0 ? (
+            <div className={styles.emptyState}>
+              <h3>Nenhum saldo cadastrado</h3>
+              <p>Cadastre o primeiro saldo para começar o controle.</p>
+            </div>
+          ) : (
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Grupo</th>
+                    <th>Produto</th>
+                    <th>Unidade</th>
+                    <th>Contratado</th>
+                    <th>Utilizado</th>
+                    <th>Saldo</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {saldos.map((item, index) => {
+                    const saldoRestante =
+                      item.quantidadeContratada - item.quantidadeUtilizada;
+
+                    const status = getStatus(item);
+
+                    return (
+                      <tr key={`${item.grupo}-${item.produto}-${index}`}>
+                        <td className={styles.capitalize}>{item.grupo}</td>
+                        <td>
+                          <div className={styles.productCell}>
+                            <span className={styles.productIcon}>
+                              <Boxes size={16} />
+                            </span>
+                            <span>{item.produto}</span>
+                          </div>
+                        </td>
+                        <td>{item.unidade}</td>
+                        <td>{item.quantidadeContratada}</td>
+                        <td>{item.quantidadeUtilizada.toFixed(2)}</td>
+                        <td>{saldoRestante.toFixed(2)}</td>
+                        <td>
+                          <span
+                            className={`${styles.statusBadge} ${getStatusClass(
+                              status
+                            )}`}
+                          >
+                            {getStatusLabel(status)}
+                          </span>
+                        </td>
+                        <td>
+                          <div className={styles.tableActions}>
+                            <button
+                              type="button"
+                              onClick={() => handleEditar(index)}
+                              className={styles.secondaryButton}
+                            >
+                              <Pencil size={18} />
+                              <span>Editar</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemover(index)}
+                              className={styles.dangerButton}
+                            >
+                              <Trash2 size={18} />
+                              <span>Remover</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </section>
   );
 }

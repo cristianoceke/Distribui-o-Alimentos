@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import type { Cardapio, ItemCardapio } from "@/types/cardapio";
 import type { Preparacao } from "@/types/preparacao";
 import styles from "@/app/cardapios/cardapios.module.css";
@@ -146,7 +147,7 @@ export default function CardapiosPage() {
       itens,
     };
 
-    let novaLista = [...cardapios];
+    const novaLista = [...cardapios];
 
     if (indiceEditando === null) {
       novaLista.push(novoCardapio);
@@ -184,7 +185,9 @@ export default function CardapiosPage() {
   }
 
   function handleRemoverCardapio(indexParaRemover: number) {
-    const confirmou = window.confirm("Tem certeza que deseja remover este cardápio?");
+    const confirmou = window.confirm(
+      "Tem certeza que deseja remover este cardápio?"
+    );
     if (!confirmou) return;
 
     const novaLista = cardapios.filter((_, index) => index !== indexParaRemover);
@@ -378,7 +381,8 @@ export default function CardapiosPage() {
                   onClick={handleAdicionarItemCardapio}
                   className={styles.primaryButton}
                 >
-                  Adicionar ao cardápio
+                  <Plus size={18} />
+                  <span>Adicionar ao cardápio</span>
                 </button>
               </div>
             </div>
@@ -429,7 +433,8 @@ export default function CardapiosPage() {
                           }}
                           className={styles.dangerButton}
                         >
-                          Remover
+                          <Trash2 size={18} />
+                          <span>Remover</span>
                         </button>
                       </div>
                     </article>
@@ -442,7 +447,10 @@ export default function CardapiosPage() {
                     onClick={handleSalvarCardapio}
                     className={styles.saveButton}
                   >
-                    {indiceEditando === null ? "Salvar cardápio" : "Salvar edição"}
+                    <Save size={18} />
+                    <span>
+                      {indiceEditando === null ? "Salvar cardápio" : "Salvar edição"}
+                    </span>
                   </button>
 
                   {indiceEditando !== null && (
@@ -451,7 +459,8 @@ export default function CardapiosPage() {
                       onClick={handleCancelarEdicao}
                       className={styles.primaryButton}
                     >
-                      Cancelar edição
+                      <X size={18} />
+                      <span>Cancelar edição</span>
                     </button>
                   )}
                 </div>
@@ -516,7 +525,8 @@ export default function CardapiosPage() {
                       onClick={() => handleEditarCardapio(index)}
                       className={styles.primaryButton}
                     >
-                      Editar
+                      <Pencil size={18} />
+                      <span>Editar</span>
                     </button>
 
                     <button
@@ -524,7 +534,8 @@ export default function CardapiosPage() {
                       onClick={() => handleRemoverCardapio(index)}
                       className={styles.dangerButton}
                     >
-                      Remover
+                      <Trash2 size={18} />
+                      <span>Remover</span>
                     </button>
                   </div>
                 </article>

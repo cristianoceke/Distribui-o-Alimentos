@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Preparacao } from "@/types/preparacao";
 import Link from "next/link";
+import {
+  Pencil,
+  Plus,
+  Save,
+  Trash2,
+  X,
+  BookOpen,
+} from "lucide-react";
 import styles from "@/app/pratos/pratos.module.css";
 
 export default function PreparacoesPage() {
@@ -14,9 +22,15 @@ export default function PreparacoesPage() {
 
   useEffect(() => {
     const preparacoesSalvas = localStorage.getItem("preparacoes");
-    if (preparacoesSalvas) {
-      setPreparacoes(JSON.parse(preparacoesSalvas));
+
+    if (preparacoesSalvas && preparacoesSalvas !== "undefined") {
+      try {
+        setPreparacoes(JSON.parse(preparacoesSalvas));
+      } catch {
+        setPreparacoes([]);
+      }
     }
+
     setCarregouPreparacoes(true);
   }, []);
 
@@ -45,6 +59,7 @@ export default function PreparacoesPage() {
       const mesmoNome =
         preparacao.nome.trim().toLowerCase() === nomeNormalizado;
       const outraPreparacao = index !== indiceEditando;
+
       return mesmoNome && outraPreparacao;
     });
 
@@ -55,9 +70,10 @@ export default function PreparacoesPage() {
 
     const novaPreparacao: Preparacao = {
       nome: nome.trim(),
-      ingredientes: indiceEditando !== null
-        ? preparacoes[indiceEditando]?.ingredientes || []
-        : [],
+      ingredientes:
+        indiceEditando !== null
+          ? preparacoes[indiceEditando]?.ingredientes || []
+          : [],
     };
 
     const novaLista = [...preparacoes];
@@ -77,6 +93,7 @@ export default function PreparacoesPage() {
     const novaLista = preparacoes.filter(
       (_, index) => index !== indexParaRemover
     );
+
     setPreparacoes(novaLista);
 
     if (indiceEditando === indexParaRemover) {
@@ -98,7 +115,7 @@ export default function PreparacoesPage() {
 
   const totalIngredientes = useMemo(() => {
     return preparacoes.reduce(
-      (total, preparacao) => total + preparacao.ingredientes.length,
+      (total, preparacao) => total + (preparacao.ingredientes?.length || 0),
       0
     );
   }, [preparacoes]);
@@ -173,7 +190,10 @@ export default function PreparacoesPage() {
 
             <div className={styles.actions}>
               <button type="submit" className={styles.primaryButton}>
-                {indiceEditando === null ? "Adicionar prato" : "Salvar edição"}
+                {indiceEditando === null ? <Plus size={18} /> : <Save size={18} />}
+                <span>
+                  {indiceEditando === null ? "Adicionar prato" : "Salvar edição"}
+                </span>
               </button>
 
               {indiceEditando !== null && (
@@ -182,7 +202,8 @@ export default function PreparacoesPage() {
                   onClick={handleCancelarEdicao}
                   className={styles.warningButton}
                 >
-                  Cancelar edição
+                  <X size={18} />
+                  <span>Cancelar edição</span>
                 </button>
               )}
             </div>
@@ -243,7 +264,8 @@ export default function PreparacoesPage() {
                         onClick={() => handleEditarPreparacao(index)}
                         className={styles.secondaryButton}
                       >
-                        Editar
+                        <Pencil size={18} />
+                        <span>Editar</span>
                       </button>
 
                       {estaEditando && (
@@ -252,7 +274,8 @@ export default function PreparacoesPage() {
                           onClick={handleCancelarEdicao}
                           className={styles.warningButton}
                         >
-                          Cancelar
+                          <X size={18} />
+                          <span>Cancelar</span>
                         </button>
                       )}
 
@@ -260,7 +283,8 @@ export default function PreparacoesPage() {
                         href={`/pratos/${index}/receita`}
                         className={styles.linkButton}
                       >
-                        Montar receita
+                        <BookOpen size={18} />
+                        <span>Montar receita</span>
                       </Link>
 
                       <button
@@ -276,7 +300,8 @@ export default function PreparacoesPage() {
                         }}
                         className={styles.dangerButton}
                       >
-                        Remover
+                        <Trash2 size={18} />
+                        <span>Remover</span>
                       </button>
                     </div>
                   </article>
