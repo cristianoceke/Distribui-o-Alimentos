@@ -1,0 +1,297 @@
+.page {
+  min-height: 100vh;
+  background: #f5f6f8;
+  padding: 24px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.printButton {
+  height: 44px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 12px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.printButton:hover {
+  filter: brightness(1.05);
+}
+
+.document {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;
+  padding: 20px 20px 28px;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 1.2fr 0.7fr 1fr;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.mainTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.subInfo {
+  margin: 10px 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.headerCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+.centerText {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.logoWrapper {
+  margin-bottom: 8px;
+}
+
+.logo {
+  object-fit: contain;
+}
+
+.orgText p {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.highlightRow {
+  display: grid;
+  grid-template-columns: 1.5fr 0.9fr;
+  border: 1px solid #000;
+  margin-bottom: 14px;
+}
+
+.schoolBox,
+.deliveryBox {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+}
+
+.schoolBox {
+  border-right: 1px solid #000;
+  background: #eceb92;
+}
+
+.deliveryBox {
+  background: #eceb92;
+}
+
+.boxLabel {
+  padding: 0 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.boxValue {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.metaRow {
+  display: grid;
+  grid-template-columns: 0.6fr 0.9fr 1fr;
+  border: 1px solid #000;
+  margin-bottom: 14px;
+}
+
+.metaBox {
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6px 10px;
+  border-right: 1px solid #000;
+}
+
+.metaBox:last-child {
+  border-right: none;
+}
+
+.metaLabel {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.metaValue {
+  font-size: 0.92rem;
+}
+
+.receiptLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  margin-bottom: 14px;
+}
+
+.dotted {
+  flex: 1;
+  border-bottom: 2px dotted #555;
+  height: 1px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+}
+
+.table th,
+.table td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  font-size: 0.92rem;
+}
+
+.table th {
+  text-align: center;
+  font-weight: 800;
+  background: #f8f8f8;
+}
+
+.center {
+  text-align: center;
+}
+
+.footer {
+  margin-top: 40px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.signatureBlock {
+  width: 320px;
+  text-align: center;
+}
+
+.signatureLine {
+  border-top: 1px solid #000;
+  margin-bottom: 8px;
+}
+
+.signatureBlock p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.notFound {
+  max-width: 700px;
+  margin: 80px auto;
+  background: #fff;
+  border: 1px solid #d9dde3;
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.notFound h1 {
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.notFound p {
+  margin: 0;
+  color: #6b7280;
+}
+
+@media (max-width: 900px) {
+  .header {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .headerLeft,
+  .headerCenter,
+  .headerRight {
+    align-items: center;
+  }
+
+  .highlightRow,
+  .metaRow {
+    grid-template-columns: 1fr;
+  }
+
+  .schoolBox,
+  .metaBox {
+    border-right: none;
+    border-bottom: 1px solid #000;
+  }
+
+  .metaBox:last-child {
+    border-bottom: none;
+  }
+
+  .receiptLine {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dotted {
+    width: 100%;
+  }
+}
+
+@media print {
+  .page {
+    background: #fff;
+    padding: 0;
+  }
+
+  .actions {
+    display: none;
+  }
+
+  .document {
+    max-width: none;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+}

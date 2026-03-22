@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import type { PedidoSemanalGerado } from "@/types/pedido-semanal";
+import styles from "@/app/pedidos-semanais/[index]/pedidos-semanais.module.css";
 
 export default function PedidoSemanalSalvoPage() {
   const params = useParams();
-  const index = Number(Array.isArray(params.index) ? params.index[0] : params.index);
+  const index = Number(
+    Array.isArray(params.index) ? params.index[0] : params.index
+  );
 
   const [pedido, setPedido] = useState<PedidoSemanalGerado | null>(null);
 
@@ -38,71 +42,123 @@ export default function PedidoSemanalSalvoPage() {
 
   if (!pedido) {
     return (
-      <main>
-        <h1>Pedido não encontrado</h1>
-        <p>Não foi possível localizar esse pedido.</p>
+      <main className={styles.page}>
+        <div className={styles.notFound}>
+          <h1>Pedido não encontrado</h1>
+          <p>Não foi possível localizar esse pedido.</p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main style={{ padding: "24px" }}>
-      <div style={{ marginBottom: "16px" }}>
-        <button type="button" onClick={() => window.print()}>
+    <main className={styles.page}>
+      <div className={styles.actions}>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className={styles.printButton}
+        >
           Imprimir
         </button>
       </div>
 
-      <div style={{ border: "1px solid #000", padding: "16px" }}>
-        <div style={{ textAlign: "center", marginBottom: "16px" }}>
-          <h1 style={{ margin: 0 }}>PEDIDO SEMANAL</h1>
-          <h2 style={{ margin: "8px 0 0 0" }}>REDE MUNICIPAL</h2>
+      <section className={styles.document}>
+        <header className={styles.header}>
+          <div className={styles.headerLeft}>
+            <h1 className={styles.mainTitle}>MERENDA ESCOLAR ITAPORANGA</h1>
+            <p className={styles.subInfo}>PEDIDO SEMANAL DA REDE MUNICIPAL</p>
+          </div>
+
+          <div className={styles.headerCenter}>
+            <p className={styles.centerText}>Grupo: {pedido.grupo}</p>
+            <p className={styles.centerText}>Semana {pedido.semana}</p>
+          </div>
+
+          <div className={styles.headerRight}>
+            <div className={styles.logoWrapper}>
+              <Image
+                src="/BRASÃO-PMI1.png"
+                alt="Brasão da Prefeitura de Itaporanga d'Ajuda"
+                width={88}
+                height={88}
+                className={styles.logo}
+                priority
+              />
+            </div>
+
+            <div className={styles.orgText}>
+              <p>PREFEITURA MUNICIPAL DE ITAPORANGA D&apos;AJUDA</p>
+              <p>SECRETARIA MUNICIPAL DE EDUCAÇÃO</p>
+              <p>DEPARTAMENTO DE NUTRIÇÃO E ALIMENTAÇÃO ESCOLAR</p>
+            </div>
+          </div>
+        </header>
+
+        <div className={styles.highlightRow}>
+          <div className={styles.groupBox}>
+            <span className={styles.boxLabel}>Grupo</span>
+            <strong className={styles.boxValue}>{pedido.grupo}</strong>
+          </div>
+
+          <div className={styles.weekBox}>
+            <span className={styles.boxLabel}>Semana</span>
+            <strong className={styles.boxValue}>{pedido.semana}</strong>
+          </div>
         </div>
 
-        <div style={{ marginBottom: "16px" }}>
-          <p><strong>Grupo:</strong> {pedido.grupo}</p>
-          <p><strong>Semana:</strong> {pedido.semana}</p>
-          <p><strong>Data de geração:</strong> {formatarData(pedido.dataGeracao)}</p>
-          <p><strong>Total de alunos:</strong> {pedido.totalAlunos}</p>
+        <div className={styles.metaRow}>
+          <div className={styles.metaBox}>
+            <span className={styles.metaLabel}>Data de geração</span>
+            <strong className={styles.metaValue}>
+              {formatarData(pedido.dataGeracao)}
+            </strong>
+          </div>
+
+          <div className={styles.metaBox}>
+            <span className={styles.metaLabel}>Total de alunos</span>
+            <strong className={styles.metaValue}>{pedido.totalAlunos}</strong>
+          </div>
+
+          <div className={styles.metaBox}>
+            <span className={styles.metaLabel}>Referência</span>
+            <strong className={styles.metaValue}>Pedido semanal</strong>
+          </div>
         </div>
 
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            marginTop: "16px",
-          }}
-        >
+        <table className={styles.table}>
           <thead>
             <tr>
-              <th style={{ border: "1px solid #000", padding: "8px" }}>
-                PRODUTO
-              </th>
-              <th style={{ border: "1px solid #000", padding: "8px" }}>
-                UNIDADE
-              </th>
-              <th style={{ border: "1px solid #000", padding: "8px" }}>
-                QUANTIDADE
-              </th>
+              <th>PRODUTO</th>
+              <th>UNIDADE</th>
+              <th>QUANTIDADE</th>
             </tr>
           </thead>
           <tbody>
             {pedido.itens.map((item, itemIndex) => (
               <tr key={itemIndex}>
-                <td style={{ border: "1px solid #000", padding: "8px" }}>
-                  {item.produto}
-                </td>
-                <td style={{ border: "1px solid #000", padding: "8px", textAlign: "center" }}>
-                  {item.unidade}
-                </td>
-                <td style={{ border: "1px solid #000", padding: "8px", textAlign: "center" }}>
-                  {item.quantidade.toFixed(2)}
-                </td>
+                <td>{item.produto}</td>
+                <td className={styles.center}>{item.unidade}</td>
+                <td className={styles.center}>{item.quantidade.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+
+        <footer className={styles.footer}>
+          <div className={styles.signatureGrid}>
+            <div className={styles.signatureBlock}>
+              <div className={styles.signatureLine}></div>
+              <p>Responsável pela emissão</p>
+            </div>
+
+            <div className={styles.signatureBlock}>
+              <div className={styles.signatureLine}></div>
+              <p>Recebimento / Conferência</p>
+            </div>
+          </div>
+        </footer>
+      </section>
     </main>
   );
 }
