@@ -102,20 +102,25 @@ textarea {
 }
 
 .brand__badge {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
+  width: auto;
+  height: auto;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .brand__logoImage {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: auto;
+  height: auto;
+  max-width: 280px;
+  max-height: 112px;
 }
 
 .brand__text h1 {
@@ -271,8 +276,12 @@ textarea {
   }
 
   .brand__badge {
-    width: 44px;
-    height: 44px;
+    max-width: 150px;
+  }
+
+  .brand__logoImage {
+    max-width: 190px;
+    max-height: 76px;
   }
 
   .brand__text h1 {

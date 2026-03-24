@@ -6,12 +6,12 @@ import { usePathname } from "next/navigation";
 const menuItems = [
   { href: "/", label: "Home" },
   { href: "/romaneio", label: "Romaneio" },
-  { href: "/escolas", label: "Escolas" },
-  { href: "/cardapios", label: "Cardápios" },
-  { href: "/pratos", label: "Pratos" },
-  { href: "/produtos", label: "Produtos" },
   { href: "/historico-romaneios", label: "Histórico de Romaneios" },
   { href: "/pedidos-semanais", label: "Pedidos" },
+  { href: "/escolas", label: "Escolas" },
+  { href: "/produtos", label: "Produtos" },
+  { href: "/pratos", label: "Pratos" },
+  { href: "/cardapios", label: "Cardápios" },
   { href: "/saldos", label: "Saldo" },
 ];
 

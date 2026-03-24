@@ -21,6 +21,10 @@ type ItemAjustado = ItemCalculado & {
   ativo: boolean;
 };
 
+function normalizeText(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function hydrateRomaneios() {
   return readStorage<RomaneioGerado[]>("romaneios", []).map((romaneio) => ({
     ...romaneio,
@@ -36,30 +40,40 @@ function calcularItensRomaneio(params: {
   preparacoes: Preparacao[];
 }) {
   const { escolaSelecionada, semana, escolas, cardapios, preparacoes } = params;
+  const escolaSelecionadaNormalizada = normalizeText(escolaSelecionada);
+  const semanaNormalizada = normalizeText(semana);
 
-  const escolaEscolhida = escolas.find((escola) => escola.nome === escolaSelecionada);
+  const escolaEscolhida = escolas.find(
+    (escola) => normalizeText(escola.nome) === escolaSelecionadaNormalizada
+  );
 
   if (!escolaEscolhida || !semana) {
     return [];
   }
 
-  const cardapiosDaSemana = cardapios.filter((cardapio) => cardapio.semana === semana);
+  const cardapiosDaSemana = cardapios.filter(
+    (cardapio) => normalizeText(cardapio.semana) === semanaNormalizada
+  );
 
   const cardapiosDaEscola = cardapiosDaSemana.filter((cardapio) =>
-    escolaEscolhida.grupos.some((grupo) => grupo.grupo === cardapio.grupo)
+    escolaEscolhida.grupos.some(
+      (grupo) => normalizeText(grupo.grupo) === normalizeText(cardapio.grupo)
+    )
   );
 
   const itensCalculados: ItemCalculado[] = [];
 
   cardapiosDaEscola.forEach((cardapio) => {
     const grupoDaEscola = escolaEscolhida.grupos.find(
-      (grupo) => grupo.grupo === cardapio.grupo
+      (grupo) => normalizeText(grupo.grupo) === normalizeText(cardapio.grupo)
     );
 
     const qtdAlunos = grupoDaEscola?.quantidadeAlunos || 0;
 
     cardapio.itens.forEach((item) => {
-      const preparacao = preparacoes.find((prep) => prep.nome === item.preparacao);
+      const preparacao = preparacoes.find(
+        (prep) => normalizeText(prep.nome) === normalizeText(item.preparacao)
+      );
 
       if (!preparacao) return;
 
@@ -97,10 +111,139 @@ function calcularItensRomaneio(params: {
   }));
 }
 
-function RomaneioPageContent() {
-  const searchParams = useSearchParams();
-  const editarParam = searchParams.get("editar");
+function getMotivosSemItens(params: {
+  escolaSelecionada: string;
+  semana: string;
+  escolas: Escola[];
+  cardapios: Cardapio[];
+  preparacoes: Preparacao[];
+}) {
+  const { escolaSelecionada, semana, escolas, cardapios, preparacoes } = params;
 
+  if (!escolaSelecionada || !semana) {
+    return [];
+  }
+
+  const escolaSelecionadaNormalizada = normalizeText(escolaSelecionada);
+  const semanaNormalizada = normalizeText(semana);
+  const escolaEscolhida = escolas.find(
+    (escola) => normalizeText(escola.nome) === escolaSelecionadaNormalizada
+  );
+
+  if (!escolaEscolhida) {
+    return ["A escola selecionada nao foi encontrada no cadastro."];
+  }
+
+  const cardapiosDaSemana = cardapios.filter(
+    (cardapio) => normalizeText(cardapio.semana) === semanaNormalizada
+  );
+
+  if (cardapiosDaSemana.length === 0) {
+    return ["Nao existe cardapio cadastrado para a semana selecionada."];
+  }
+
+  const gruposDaEscola = escolaEscolhida.grupos.map((grupo) => grupo.grupo);
+  const gruposCompativeis = gruposDaEscola.filter((grupo) =>
+    cardapiosDaSemana.some(
+      (cardapio) => normalizeText(cardapio.grupo) === normalizeText(grupo)
+    )
+  );
+
+  if (gruposCompativeis.length === 0) {
+    return [
+      "Os grupos da escola nao possuem cardapio vinculado nesta semana.",
+    ];
+  }
+
+  const preparacoesAusentes = Array.from(
+    new Set(
+      cardapiosDaSemana
+        .filter((cardapio) =>
+          gruposCompativeis.some(
+            (grupo) => normalizeText(grupo) === normalizeText(cardapio.grupo)
+          )
+        )
+        .flatMap((cardapio) =>
+          cardapio.itens
+            .filter(
+              (item) =>
+                !preparacoes.some(
+                  (prep) => normalizeText(prep.nome) === normalizeText(item.preparacao)
+                )
+            )
+            .map((item) => item.preparacao)
+        )
+    )
+  );
+
+  const preparacoesSemIngredientes = Array.from(
+    new Set(
+      cardapiosDaSemana
+        .filter((cardapio) =>
+          gruposCompativeis.some(
+            (grupo) => normalizeText(grupo) === normalizeText(cardapio.grupo)
+          )
+        )
+        .flatMap((cardapio) =>
+          cardapio.itens
+            .filter((item) => {
+              const preparacao = preparacoes.find(
+                (prep) => normalizeText(prep.nome) === normalizeText(item.preparacao)
+              );
+
+              return preparacao !== undefined && preparacao.ingredientes.length === 0;
+            })
+            .map((item) => item.preparacao)
+        )
+    )
+  );
+
+  const gruposSemAlunos = escolaEscolhida.grupos
+    .filter(
+      (grupo) =>
+        gruposCompativeis.some(
+          (grupoCompativel) =>
+            normalizeText(grupoCompativel) === normalizeText(grupo.grupo)
+        ) && Number(grupo.quantidadeAlunos) <= 0
+    )
+    .map((grupo) => grupo.grupo);
+
+  const motivos: string[] = [];
+
+  if (preparacoesAusentes.length > 0) {
+    motivos.push(
+      `As seguintes preparacoes do cardapio nao foram encontradas: ${preparacoesAusentes.join(
+        ", "
+      )}.`
+    );
+  }
+
+  if (preparacoesSemIngredientes.length > 0) {
+    motivos.push(
+      `Estas preparacoes nao possuem ingredientes cadastrados: ${preparacoesSemIngredientes.join(
+        ", "
+      )}.`
+    );
+  }
+
+  if (gruposSemAlunos.length > 0) {
+    motivos.push(
+      `Os seguintes grupos estao com quantidade de alunos zerada: ${gruposSemAlunos.join(
+        ", "
+      )}.`
+    );
+  }
+
+  if (motivos.length === 0) {
+    motivos.push(
+      "Nao foi possivel gerar itens com os dados atuais. Revise os grupos da escola, os cardapios da semana e as receitas das preparacoes."
+    );
+  }
+
+  return motivos;
+}
+
+function RomaneioPageClient({ editarParam }: { editarParam: string | null }) {
   const semanas = ["1", "2", "3", "4"];
   const romaneioInicial = editarParam
     ? hydrateRomaneios().find((item) => item.id === editarParam) ?? null
@@ -128,9 +271,10 @@ function RomaneioPageContent() {
   );
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
-  const hydrated = useHydrated();
 
-  const escolaEscolhida = escolas.find((e) => e.nome === escolaSelecionada);
+  const escolaEscolhida = escolas.find(
+    (e) => normalizeText(e.nome) === normalizeText(escolaSelecionada)
+  );
 
   function limparMensagens() {
     setErro("");
@@ -285,9 +429,17 @@ function RomaneioPageContent() {
       .reduce((soma, item) => soma + item.quantidade, 0);
   }, [itensAjustados]);
 
-  if (!hydrated) {
-    return <section className={styles.page} />;
-  }
+  const motivosSemItens = useMemo(
+    () =>
+      getMotivosSemItens({
+        escolaSelecionada,
+        semana,
+        escolas,
+        cardapios,
+        preparacoes,
+      }),
+    [escolaSelecionada, semana, escolas, cardapios, preparacoes]
+  );
 
   return (
     <section className={styles.page}>
@@ -430,10 +582,23 @@ function RomaneioPageContent() {
         {itensAjustados.length === 0 ? (
           <div className={styles.emptyState}>
             <h3>Nenhum item calculado</h3>
-            <p>
-              Selecione uma escola e uma semana para carregar automaticamente os
-              itens do romaneio.
-            </p>
+            {escolaSelecionada && semana ? (
+              <>
+                <p>O romaneio nao pode ser gerado com a selecao atual.</p>
+                {motivosSemItens.length > 0 && (
+                  <ul className={styles.emptyReasons}>
+                    {motivosSemItens.map((motivo) => (
+                      <li key={motivo}>{motivo}</li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <p>
+                Selecione uma escola e uma semana para carregar automaticamente os
+                itens do romaneio.
+              </p>
+            )}
           </div>
         ) : (
           <>
@@ -563,6 +728,18 @@ function RomaneioPageContent() {
       </section>
     </section>
   );
+}
+
+function RomaneioPageContent() {
+  const searchParams = useSearchParams();
+  const editarParam = searchParams.get("editar");
+  const hydrated = useHydrated();
+
+  if (!hydrated) {
+    return <section className={styles.page} />;
+  }
+
+  return <RomaneioPageClient key={editarParam ?? "novo"} editarParam={editarParam} />;
 }
 
 export default function RomaneioPage() {

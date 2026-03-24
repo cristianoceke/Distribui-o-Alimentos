@@ -293,6 +293,68 @@
   overflow-x: auto;
 }
 
+.romaneioScrollArea {
+  max-height: 540px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.romaneioScrollArea::-webkit-scrollbar {
+  display: none;
+}
+
+.romaneioList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.romaneioCard {
+  border: 1px solid #dbe3e7;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.romaneioCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.romaneioSchool {
+  margin: 0;
+  color: #2b3f51;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.romaneioMeta {
+  margin: 6px 0 0;
+  color: #738593;
+  font-size: 0.9rem;
+}
+
+.romaneioBadge {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eef7f8;
+  color: #2f7480;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.romaneioActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -464,5 +526,9 @@
   .tableActions {
     justify-content: flex-end;
     flex-wrap: wrap;
+  }
+
+  .romaneioCardHeader {
+    flex-direction: column;
   }
 }

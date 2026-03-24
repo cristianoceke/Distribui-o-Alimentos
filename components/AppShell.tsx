@@ -37,14 +37,16 @@ export default function AppShell({ children }: AppShellProps) {
               <Image
                 src="/logo.png"
                 alt="Lunutrix"
-                width={100}
-                height={68}
+                width={1536}
+                height={1024}
+                className="brand__logoImage"
+                unoptimized
                 priority
               />
             </div>
 
             <div className="brand__text">
-              <h1>Sistema de Merenda Escolar</h1>
+              <h1>Sistema de Alimentação Escolar</h1>
               <span>Gestão de escolas, cardápios e romaneios</span>
             </div>
           </div>

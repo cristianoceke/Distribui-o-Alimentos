@@ -312,6 +312,18 @@
   line-height: 1.5;
 }
 
+.emptyReasons {
+  margin: 14px auto 0;
+  max-width: 720px;
+  padding-left: 18px;
+  text-align: left;
+  color: var(--gray-700);
+}
+
+.emptyReasons li + li {
+  margin-top: 8px;
+}
+
 .mobileList {
   display: none;
 }

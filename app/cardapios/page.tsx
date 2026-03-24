@@ -126,7 +126,9 @@ export default function CardapiosPage() {
     });
 
     if (cardapioDuplicado) {
-      setErro("Já existe um cardápio cadastrado para esse grupo e semana.");
+      setErro(
+        "Ja existe um cardapio salvo para esse grupo e semana. Edite o cardapio existente para fazer alteracoes."
+      );
       return;
     }
 

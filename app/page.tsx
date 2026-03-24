@@ -11,6 +11,7 @@ import {
   UtensilsCrossed,
   ClipboardList,
   Package,
+  Eye,
   Pencil,
   ExternalLink,
 } from "lucide-react";
@@ -139,45 +140,20 @@ export default function Home() {
 
   const diaSelecionado = resumoSemana.find((item) => item.chave === diaAtivo);
 
-  const resumoRomaneio = useMemo(() => {
-    const ultimoRomaneio = [...romaneios].sort(
+  const ultimosRomaneios = useMemo(() => {
+    return [...romaneios]
+      .sort(
       (a, b) =>
         new Date(b.dataGeracao).getTime() - new Date(a.dataGeracao).getTime()
-    )[0];
-
-    if (!ultimoRomaneio) return [];
-
-    const mapa = new Map<
-      string,
-      {
-        produto: string;
-        unidade: string;
-        quantidade: number;
-      }
-    >();
-
-    ultimoRomaneio.itens.forEach((item) => {
-      const chave = `${item.produto}-${item.unidade}`;
-      const existente = mapa.get(chave);
-
-      if (existente) {
-        existente.quantidade += item.quantidade;
-      } else {
-        mapa.set(chave, {
-          produto: item.produto,
-          unidade: item.unidade,
-          quantidade: item.quantidade,
-        });
-      }
-    });
-
-    return Array.from(mapa.values()).slice(0, 6);
+      )
+      .slice(0, 5);
   }, [romaneios]);
 
-  function formatarQuantidade(valor: number) {
-    return valor.toLocaleString("pt-BR", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
+  function formatarData(dataIso: string) {
+    return new Date(dataIso).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   }
 
@@ -353,31 +329,64 @@ export default function Home() {
         <div className={styles.rightColumn}>
           <article className={styles.panel}>
             <div className={styles.panelTableHeader}>
-              <h2>Resumo do Romaneio</h2>
+              <h2>Ultimos Romaneios</h2>
             </div>
 
-            {resumoRomaneio.length === 0 ? (
+            {ultimosRomaneios.length === 0 ? (
               <div className={styles.emptyBox}>Nenhum romaneio gerado ainda.</div>
             ) : (
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Produto</th>
-                      <th>Unidade</th>
-                      <th>Quantidade Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resumoRomaneio.map((item) => (
-                      <tr key={`${item.produto}-${item.unidade}`}>
-                        <td>{item.produto}</td>
-                        <td>{item.unidade}</td>
-                        <td>{formatarQuantidade(item.quantidade)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className={styles.romaneioScrollArea}>
+                <div className={styles.romaneioList}>
+                {ultimosRomaneios.map((romaneio) => (
+                  <article
+                    key={romaneio.id ?? romaneio.dataGeracao}
+                    className={styles.romaneioCard}
+                  >
+                    <div className={styles.romaneioCardHeader}>
+                      <div>
+                        <h3 className={styles.romaneioSchool}>{romaneio.escola}</h3>
+                        <p className={styles.romaneioMeta}>
+                          Semana {romaneio.semana} • {formatarData(romaneio.dataGeracao)}
+                        </p>
+                      </div>
+
+                      <span className={styles.romaneioBadge}>
+                        {romaneio.itens.length} item
+                        {romaneio.itens.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+
+                    <div className={styles.romaneioActions}>
+                      <Link
+                        href={`/historico-romaneios/${romaneio.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.actionButton}
+                      >
+                        <Eye size={15} strokeWidth={2.2} />
+                        <span>Abrir</span>
+                      </Link>
+
+                      <Link
+                        href={`/romaneio?editar=${romaneio.id}`}
+                        className={styles.actionButton}
+                      >
+                        <Pencil size={15} strokeWidth={2.2} />
+                        <span>Editar</span>
+                      </Link>
+
+                      <Link
+                        href={`/historico-romaneios/${romaneio.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.iconOnlyButton}
+                      >
+                        <ExternalLink size={15} strokeWidth={2.2} />
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+                </div>
               </div>
             )}
           </article>
