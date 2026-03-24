@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema de Merenda Escolar",
+  title: "Sistema de Alimentação Escolar",
   description: "Gestão de escolas, preparações, cardápios e romaneio",
 };
 
