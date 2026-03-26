@@ -408,7 +408,7 @@ textarea {
   .page-content {
     margin-left: 0;
     width: 100%;
-    padding: 20px var(--page-padding-x) 28px;
+    padding: calc(24px + env(safe-area-inset-top)) var(--page-padding-x) 28px;
   }
 
   .topbar__municipioName {
@@ -466,5 +466,9 @@ textarea {
   .topbar__content {
     padding: 0 max(var(--page-padding-x), env(safe-area-inset-right)) 0
       max(10px, env(safe-area-inset-left));
+  }
+
+  .page-content {
+    padding-top: calc(28px + env(safe-area-inset-top));
   }
 }
