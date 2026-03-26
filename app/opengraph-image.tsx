@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 export const size = {
   width: 1200,
@@ -7,8 +9,10 @@ export const size = {
 
 export const contentType = "image/png";
 
-export default function OpengraphImage() {
-  const logoUrl = new URL("../public/logo.png", import.meta.url);
+export default async function OpengraphImage() {
+  const logoPath = path.join(process.cwd(), "public", "logo.png");
+  const logoBuffer = await readFile(logoPath);
+  const logoDataUrl = `data:image/png;base64,${logoBuffer.toString("base64")}`;
 
   return new ImageResponse(
     (
@@ -80,7 +84,7 @@ export default function OpengraphImage() {
           }}
         >
           <img
-            src={logoUrl.toString()}
+            src={logoDataUrl}
             alt="Logo do sistema"
             width="300"
             height="200"
