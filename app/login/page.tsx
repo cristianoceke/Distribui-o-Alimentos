@@ -1,15 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/utils/auth";
 import styles from "@/app/login/login.module.css";
 
 export default function LoginPage() {
   const router = useRouter();
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const senhaRef = useRef<HTMLInputElement | null>(null);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
+
+  function scrollCampoEmFoco(element: HTMLInputElement | null) {
+    if (!element) {
+      return;
+    }
+
+    setTimeout(() => {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 180);
+  }
 
   function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,22 +62,37 @@ export default function LoginPage() {
           <div className={styles.field}>
             <label htmlFor="email">E-mail</label>
             <input
+              ref={emailRef}
               id="email"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              onFocus={() => scrollCampoEmFoco(emailRef.current)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  senhaRef.current?.focus();
+                }
+              }}
               placeholder="seuemail@exemplo.com"
+              autoComplete="email"
+              inputMode="email"
+              enterKeyHint="next"
             />
           </div>
 
           <div className={styles.field}>
             <label htmlFor="senha">Senha</label>
             <input
+              ref={senhaRef}
               id="senha"
               type="password"
               value={senha}
               onChange={(event) => setSenha(event.target.value)}
+              onFocus={() => scrollCampoEmFoco(senhaRef.current)}
               placeholder="Digite sua senha"
+              autoComplete="current-password"
+              enterKeyHint="done"
             />
           </div>
 
