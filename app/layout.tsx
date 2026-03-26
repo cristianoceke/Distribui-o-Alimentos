@@ -13,22 +13,30 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const resolvedAppUrl =
+  process.env.NEXT_PUBLIC_APP_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
+
+const ogImageUrl = new URL("/logo.png", resolvedAppUrl).toString();
 
 export const metadata: Metadata = {
-  metadataBase: new URL(appUrl),
+  metadataBase: new URL(resolvedAppUrl),
   title: "Sistema de Alimentação Escolar",
   description: "Gestão de escolas, preparações, cardápios e romaneio",
   openGraph: {
     title: "Sistema de Alimentação Escolar",
     description: "Gestão de escolas, preparações, cardápios e romaneio",
-    url: appUrl,
+    url: resolvedAppUrl,
     siteName: "Sistema de Alimentação Escolar",
     locale: "pt_BR",
     type: "website",
     images: [
       {
-        url: "/logo.png",
+        url: ogImageUrl,
         alt: "Logo do Sistema de Alimentação Escolar",
       },
     ],
@@ -37,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Sistema de Alimentação Escolar",
     description: "Gestão de escolas, preparações, cardápios e romaneio",
-    images: ["/logo.png"],
+    images: [ogImageUrl],
   },
 };
 
