@@ -21,7 +21,7 @@ const resolvedAppUrl =
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000");
 
-const ogImageUrl = new URL("/opengraph-image.png", resolvedAppUrl).toString();
+const ogImageUrl = new URL("/opengraph-image", resolvedAppUrl).toString();
 
 export const metadata: Metadata = {
   metadataBase: new URL(resolvedAppUrl),
