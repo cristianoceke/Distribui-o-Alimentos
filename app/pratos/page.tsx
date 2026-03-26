@@ -239,7 +239,7 @@ export default function PreparacoesPage() {
 
                 return (
                   <article
-                    key={index}
+                    key={preparacao.id ?? index}
                     className={`${styles.preparationCard} ${
                       estaEditando ? styles.preparationCardEditing : ""
                     }`}
@@ -282,7 +282,7 @@ export default function PreparacoesPage() {
                       )}
 
                       <Link
-                        href={`/pratos/${index}/receita`}
+                        href={`/pratos/${preparacao.id ?? index}/receita`}
                         className={styles.linkButton}
                       >
                         <BookOpen size={18} />

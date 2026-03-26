@@ -24,11 +24,20 @@ type IngredienteReceita = {
 
 export default function ReceitaPreparacaoPage() {
   const params = useParams();
-  const index = params.index;
-  const indiceNumero = Number(Array.isArray(index) ? index[0] : index);
+  const preparacaoParam = Array.isArray(params.index) ? params.index[0] : params.index;
+  const indiceNumero = Number(preparacaoParam);
   const preparacoes = readStorage<Preparacao[]>("preparacoes", []);
+  const indicePreparacao = preparacoes.findIndex(
+    (preparacao) => preparacao.id === preparacaoParam
+  );
+  const indiceResolvido =
+    indicePreparacao >= 0
+      ? indicePreparacao
+      : !Number.isNaN(indiceNumero)
+        ? indiceNumero
+        : -1;
   const preparacaoAtual =
-    !Number.isNaN(indiceNumero) ? preparacoes[indiceNumero] : undefined;
+    indiceResolvido >= 0 ? preparacoes[indiceResolvido] : undefined;
 
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
   const [ingredientes, setIngredientes] = useState<IngredienteReceita[]>(
@@ -124,7 +133,7 @@ export default function ReceitaPreparacaoPage() {
   }
 
   function handleSalvarReceita() {
-    if (!preparacoes[indiceNumero]) {
+    if (!preparacoes[indiceResolvido]) {
       setErro("Nenhuma preparação encontrada para salvar a receita.");
       setSucesso("");
       return;
@@ -132,15 +141,15 @@ export default function ReceitaPreparacaoPage() {
 
     const listaPreparacoes = [...preparacoes];
 
-    listaPreparacoes[indiceNumero].ingredientes = ingredientes.map(
+    listaPreparacoes[indiceResolvido].ingredientes = ingredientes.map(
       (ingrediente) => ({
         ...ingrediente,
         quantidade: 0,
       })
     );
-    listaPreparacoes[indiceNumero] = {
-      ...listaPreparacoes[indiceNumero],
-      ...criarAuditoriaRegistro(listaPreparacoes[indiceNumero]),
+    listaPreparacoes[indiceResolvido] = {
+      ...listaPreparacoes[indiceResolvido],
+      ...criarAuditoriaRegistro(listaPreparacoes[indiceResolvido]),
     };
     localStorage.setItem("preparacoes", JSON.stringify(listaPreparacoes));
 
