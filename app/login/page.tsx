@@ -38,6 +38,9 @@ export default function LoginPage() {
           <p className={styles.description}>
             Entre com seu e-mail e senha para acessar o sistema.
           </p>
+          <p className={styles.helperText}>
+            Acesso inicial: admin@merenda.com / 123456
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className={styles.form}>

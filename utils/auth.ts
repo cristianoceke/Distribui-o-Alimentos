@@ -2,6 +2,13 @@ import type { SessaoUsuario, UsuarioSistema } from "@/types/auth";
 
 const USUARIOS_KEY = "usuarios";
 const SESSAO_USUARIO_KEY = "sessao-usuario";
+const USUARIO_ADMIN_PADRAO: UsuarioSistema = {
+  id: "user-1",
+  nome: "Administrador",
+  email: "admin@merenda.com",
+  senha: "123456",
+  cargo: "Administrador",
+};
 
 export function readUsuarios(): UsuarioSistema[] {
   if (typeof window === "undefined") {
@@ -11,13 +18,22 @@ export function readUsuarios(): UsuarioSistema[] {
   const raw = localStorage.getItem(USUARIOS_KEY);
 
   if (!raw || raw === "undefined") {
-    return [];
+    saveUsuarios([USUARIO_ADMIN_PADRAO]);
+    return [USUARIO_ADMIN_PADRAO];
   }
 
   try {
-    return JSON.parse(raw) as UsuarioSistema[];
+    const usuarios = JSON.parse(raw) as UsuarioSistema[];
+
+    if (!Array.isArray(usuarios) || usuarios.length === 0) {
+      saveUsuarios([USUARIO_ADMIN_PADRAO]);
+      return [USUARIO_ADMIN_PADRAO];
+    }
+
+    return usuarios;
   } catch {
-    return [];
+    saveUsuarios([USUARIO_ADMIN_PADRAO]);
+    return [USUARIO_ADMIN_PADRAO];
   }
 }
 

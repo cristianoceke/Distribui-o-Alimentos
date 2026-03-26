@@ -31,6 +31,14 @@
   line-height: 1.5;
 }
 
+.helperText {
+  margin-top: 10px;
+  color: var(--primary-800);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .form {
   display: grid;
   gap: 16px;
