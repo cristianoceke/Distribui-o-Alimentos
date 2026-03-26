@@ -5,6 +5,8 @@ import { Pencil, Plus, Trash2, X } from "lucide-react";
 import type { Escola, GrupoEscola } from "@/types/escola";
 import styles from "@/app/escolas/escola.module.css";
 import { readStorage, useHydrated } from "@/utils/storage";
+import { criarAuditoriaRegistro } from "@/utils/auditoria";
+import { formatarAtualizadoPor, formatarCriadoPor } from "@/utils/auditoria";
 
 const gruposDisponiveis = [
   "creche 6 a 11 meses",
@@ -90,6 +92,9 @@ export default function EscolasPage() {
       nome: nome.trim(),
       local: local.trim(),
       grupos,
+      ...criarAuditoriaRegistro(
+        indiceEditando !== null ? escolas[indiceEditando] : undefined
+      ),
     };
 
     const novaLista = [...escolas];
@@ -359,6 +364,14 @@ export default function EscolasPage() {
                         <p className={styles.schoolLocation}>
                           Local: {escola.local}
                         </p>
+                        {formatarCriadoPor(escola) && (
+                          <p className={styles.signatureMeta}>{formatarCriadoPor(escola)}</p>
+                        )}
+                        {formatarAtualizadoPor(escola) && (
+                          <p className={styles.signatureMeta}>
+                            {formatarAtualizadoPor(escola)}
+                          </p>
+                        )}
                       </div>
 
                       <div className={styles.totalBadge}>{total} alunos</div>

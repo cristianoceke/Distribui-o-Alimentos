@@ -5,19 +5,42 @@ import { useSearchParams } from "next/navigation";
 import type { Escola } from "@/types/escola";
 import type { Cardapio } from "@/types/cardapio";
 import type { Preparacao } from "@/types/preparacao";
-import type { RomaneioGerado } from "@/types/romaneio";
+import type { ItemRomaneio, RomaneioGerado } from "@/types/romaneio";
 import type { SaldoLicitado } from "@/types/saldo";
+import type { Produto } from "@/types/produto";
 import styles from "./romaneio.module.css";
 import { createId, readStorage, useHydrated } from "@/utils/storage";
+import { criarAuditoriaRegistro } from "@/utils/auditoria";
+import {
+  getCategoriaPerCapitaDoGrupo,
+  getPerCapitaProdutoPorGrupo,
+  findProdutoByName,
+  getResumoQuantidade,
+} from "@/utils/produtos";
+import type { CategoriaPerCapita } from "@/utils/produtos";
 
 type ItemCalculado = {
   produto: string;
   unidade: string;
   quantidade: number;
   grupo: string;
+  categoria: CategoriaPerCapita;
 };
 
-type ItemAjustado = ItemCalculado & {
+type GrupoOrigem = {
+  grupo: string;
+  categoria: CategoriaPerCapita;
+  quantidadeOriginal: number;
+};
+
+type ItemAjustado = {
+  produto: string;
+  unidade: string;
+  quantidadeCreche: number;
+  quantidadePreFundIntegralAee: number;
+  quantidadeEja: number;
+  quantidade: number;
+  gruposOrigem: GrupoOrigem[];
   ativo: boolean;
 };
 
@@ -32,14 +55,138 @@ function hydrateRomaneios() {
   }));
 }
 
+function getQuantidadesVazias() {
+  return {
+    quantidadeCreche: 0,
+    quantidadePreFundIntegralAee: 0,
+    quantidadeEja: 0,
+  };
+}
+
+function calcularTotalQuantidade(item: Pick<
+  ItemAjustado,
+  "quantidadeCreche" | "quantidadePreFundIntegralAee" | "quantidadeEja"
+>) {
+  return (
+    item.quantidadeCreche +
+    item.quantidadePreFundIntegralAee +
+    item.quantidadeEja
+  );
+}
+
+function consolidarItensPorProduto(itens: ItemRomaneio[]) {
+  const consolidados = new Map<string, ItemAjustado>();
+
+  itens.forEach((item) => {
+    const chave = `${normalizeText(item.produto)}::${normalizeText(item.unidade)}`;
+    const categoria = getCategoriaPerCapitaDoGrupo(item.grupo);
+    const existente =
+      consolidados.get(chave) ??
+      ({
+        produto: item.produto,
+        unidade: item.unidade,
+        ...getQuantidadesVazias(),
+        quantidade: 0,
+        gruposOrigem: [],
+        ativo: true,
+      } satisfies ItemAjustado);
+
+    if (categoria === "creche") {
+      existente.quantidadeCreche += item.quantidade;
+    } else if (categoria === "eja") {
+      existente.quantidadeEja += item.quantidade;
+    } else {
+      existente.quantidadePreFundIntegralAee += item.quantidade;
+    }
+
+    existente.quantidade = calcularTotalQuantidade(existente);
+
+    const grupoExistente = existente.gruposOrigem.find(
+      (grupo) => normalizeText(grupo.grupo) === normalizeText(item.grupo)
+    );
+
+    if (grupoExistente) {
+      grupoExistente.quantidadeOriginal += item.quantidade;
+    } else {
+      existente.gruposOrigem.push({
+        grupo: item.grupo,
+        categoria,
+        quantidadeOriginal: item.quantidade,
+      });
+    }
+
+    consolidados.set(chave, existente);
+  });
+
+  return Array.from(consolidados.values()).map((item) => ({
+    ...item,
+    quantidadeCreche: Number(item.quantidadeCreche.toFixed(2)),
+    quantidadePreFundIntegralAee: Number(
+      item.quantidadePreFundIntegralAee.toFixed(2)
+    ),
+    quantidadeEja: Number(item.quantidadeEja.toFixed(2)),
+    quantidade: Number(item.quantidade.toFixed(2)),
+  }));
+}
+
+function distribuirQuantidadeEntreGrupos(
+  totalCategoria: number,
+  grupos: GrupoOrigem[]
+) {
+  if (grupos.length === 0 || totalCategoria <= 0) {
+    return [];
+  }
+
+  const totalOriginal = grupos.reduce(
+    (soma, grupo) => soma + grupo.quantidadeOriginal,
+    0
+  );
+
+  if (totalOriginal <= 0) {
+    const quantidadePorGrupo = totalCategoria / grupos.length;
+
+    return grupos.map((grupo, index) => ({
+      grupo: grupo.grupo,
+      quantidade:
+        index === grupos.length - 1
+          ? Number(
+              (totalCategoria - quantidadePorGrupo * (grupos.length - 1)).toFixed(2)
+            )
+          : Number(quantidadePorGrupo.toFixed(2)),
+    }));
+  }
+
+  let acumulado = 0;
+
+  return grupos.map((grupo, index) => {
+    if (index === grupos.length - 1) {
+      return {
+        grupo: grupo.grupo,
+        quantidade: Number((totalCategoria - acumulado).toFixed(2)),
+      };
+    }
+
+    const quantidade = Number(
+      ((grupo.quantidadeOriginal / totalOriginal) * totalCategoria).toFixed(2)
+    );
+    acumulado += quantidade;
+
+    return {
+      grupo: grupo.grupo,
+      quantidade,
+    };
+  });
+}
+
 function calcularItensRomaneio(params: {
   escolaSelecionada: string;
   semana: string;
   escolas: Escola[];
   cardapios: Cardapio[];
   preparacoes: Preparacao[];
+  produtos: Produto[];
 }) {
-  const { escolaSelecionada, semana, escolas, cardapios, preparacoes } = params;
+  const { escolaSelecionada, semana, escolas, cardapios, preparacoes, produtos } = params;
   const escolaSelecionadaNormalizada = normalizeText(escolaSelecionada);
   const semanaNormalizada = normalizeText(semana);
 
@@ -78,37 +225,21 @@ function calcularItensRomaneio(params: {
       if (!preparacao) return;
 
       preparacao.ingredientes.forEach((ingrediente) => {
+        const produtoAtual = findProdutoByName(produtos, ingrediente.produto);
+        const perCapita = getPerCapitaProdutoPorGrupo(produtoAtual, cardapio.grupo);
+
         itensCalculados.push({
           produto: ingrediente.produto,
-          unidade: ingrediente.unidade,
-          quantidade: Number(ingrediente.quantidade) * qtdAlunos,
+          unidade: produtoAtual?.unidade ?? ingrediente.unidade,
+          quantidade: perCapita * qtdAlunos,
           grupo: cardapio.grupo,
+          categoria: getCategoriaPerCapitaDoGrupo(cardapio.grupo),
         });
       });
     });
   });
 
-  const consolidados: ItemCalculado[] = [];
-
-  itensCalculados.forEach((item) => {
-    const existente = consolidados.find(
-      (consolidado) =>
-        consolidado.produto === item.produto &&
-        consolidado.unidade === item.unidade &&
-        consolidado.grupo === item.grupo
-    );
-
-    if (existente) {
-      existente.quantidade += item.quantidade;
-    } else {
-      consolidados.push({ ...item });
-    }
-  });
-
-  return consolidados.map((item) => ({
-    ...item,
-    ativo: true,
-  }));
+  return consolidarItensPorProduto(itensCalculados);
 }
 
 function getMotivosSemItens(params: {
@@ -117,8 +248,10 @@ function getMotivosSemItens(params: {
   escolas: Escola[];
   cardapios: Cardapio[];
   preparacoes: Preparacao[];
+  produtos: Produto[];
 }) {
-  const { escolaSelecionada, semana, escolas, cardapios, preparacoes } = params;
+  const { escolaSelecionada, semana, escolas, cardapios, preparacoes, produtos } =
+    params;
 
   if (!escolaSelecionada || !semana) {
     return [];
@@ -208,6 +341,50 @@ function getMotivosSemItens(params: {
     )
     .map((grupo) => grupo.grupo);
 
+  const produtosSemPerCapita = Array.from(
+    new Set(
+      cardapiosDaSemana
+        .filter((cardapio) =>
+          gruposCompativeis.some(
+            (grupo) => normalizeText(grupo) === normalizeText(cardapio.grupo)
+          )
+        )
+        .flatMap((cardapio) => {
+          const categoria = getCategoriaPerCapitaDoGrupo(cardapio.grupo);
+
+          return cardapio.itens.flatMap((item) => {
+            const preparacao = preparacoes.find(
+              (prep) => normalizeText(prep.nome) === normalizeText(item.preparacao)
+            );
+
+            if (!preparacao) {
+              return [];
+            }
+
+            return preparacao.ingredientes
+              .filter((ingrediente) => {
+                const produto = findProdutoByName(produtos, ingrediente.produto);
+
+                if (!produto) {
+                  return true;
+                }
+
+                if (categoria === "creche") {
+                  return Number(produto.perCapitaCreche || 0) <= 0;
+                }
+
+                if (categoria === "eja") {
+                  return Number(produto.perCapitaEja || 0) <= 0;
+                }
+
+                return Number(produto.perCapitaPreFundIntegralAee || 0) <= 0;
+              })
+              .map((ingrediente) => ingrediente.produto);
+          });
+        })
+    )
+  );
+
   const motivos: string[] = [];
 
   if (preparacoesAusentes.length > 0) {
@@ -229,6 +406,14 @@ function getMotivosSemItens(params: {
   if (gruposSemAlunos.length > 0) {
     motivos.push(
       `Os seguintes grupos estao com quantidade de alunos zerada: ${gruposSemAlunos.join(
+        ", "
+      )}.`
+    );
+  }
+
+  if (produtosSemPerCapita.length > 0) {
+    motivos.push(
+      `Os seguintes produtos estao sem per capita configurada para os grupos selecionados: ${produtosSemPerCapita.join(
         ", "
       )}.`
     );
@@ -259,12 +444,13 @@ function RomaneioPageClient({ editarParam }: { editarParam: string | null }) {
   const [preparacoes] = useState<Preparacao[]>(() =>
     readStorage<Preparacao[]>("preparacoes", [])
   );
+  const [produtos] = useState<Produto[]>(() => readStorage<Produto[]>("produtos", []));
   const [saldos, setSaldos] = useState<SaldoLicitado[]>(() =>
     readStorage<SaldoLicitado[]>("saldos", [])
   );
 
   const [itensAjustados, setItensAjustados] = useState<ItemAjustado[]>(
-    romaneioInicial?.itens.map((item) => ({ ...item, ativo: true })) ?? []
+    romaneioInicial ? consolidarItensPorProduto(romaneioInicial.itens) : []
   );
   const [romaneioEditandoId, setRomaneioEditandoId] = useState<string | null>(
     romaneioInicial?.id ?? null
@@ -288,21 +474,38 @@ function RomaneioPageClient({ editarParam }: { editarParam: string | null }) {
     limparMensagens();
   }
 
-  function handleAlterarQuantidade(index: number, valor: string) {
+  function handleAlterarQuantidade(
+    index: number,
+    campo: "quantidadeCreche" | "quantidadePreFundIntegralAee" | "quantidadeEja",
+    valor: string
+  ) {
     const novaLista = [...itensAjustados];
-    novaLista[index].quantidade = Number(valor || 0);
+    const itemAtualizado = {
+      ...novaLista[index],
+      [campo]: Number(valor || 0),
+    };
+
+    itemAtualizado.quantidade = calcularTotalQuantidade(itemAtualizado);
+    novaLista[index] = itemAtualizado;
     setItensAjustados(novaLista);
     limparMensagens();
   }
 
-  function getSaldoDisponivel(produto: string, grupo: string) {
-    const saldo = saldos.find(
-      (item) => item.produto === produto && item.grupo === grupo
+  function getSaldoDisponivel(item: ItemAjustado) {
+    const gruposDaLinha = Array.from(
+      new Set(item.gruposOrigem.map((grupo) => normalizeText(grupo.grupo)))
     );
 
-    if (!saldo) return 0;
+    return saldos.reduce((total, saldo) => {
+      if (
+        normalizeText(saldo.produto) === normalizeText(item.produto) &&
+        gruposDaLinha.includes(normalizeText(saldo.grupo))
+      ) {
+        return total + (saldo.quantidadeContratada - saldo.quantidadeUtilizada);
+      }
 
-    return saldo.quantidadeContratada - saldo.quantidadeUtilizada;
+      return total;
+    }, 0);
   }
 
   function recalcularSaldosComBaseNosRomaneios(listaRomaneios: RomaneioGerado[]) {
@@ -353,12 +556,36 @@ function RomaneioPageClient({ editarParam }: { editarParam: string | null }) {
       dataGeracao: new Date().toISOString(),
       itens: itensAjustados
         .filter((item) => item.ativo)
-        .map((item) => ({
-          produto: item.produto,
-          unidade: item.unidade,
-          quantidade: Number(item.quantidade.toFixed(2)),
-          grupo: item.grupo,
-        })),
+        .flatMap((item) => {
+          const itensPorCategoria = [
+            {
+              quantidade: item.quantidadeCreche,
+              grupos: item.gruposOrigem.filter((grupo) => grupo.categoria === "creche"),
+            },
+            {
+              quantidade: item.quantidadePreFundIntegralAee,
+              grupos: item.gruposOrigem.filter(
+                (grupo) => grupo.categoria === "preFundIntegralAee"
+              ),
+            },
+            {
+              quantidade: item.quantidadeEja,
+              grupos: item.gruposOrigem.filter((grupo) => grupo.categoria === "eja"),
+            },
+          ];
+
+          return itensPorCategoria.flatMap(({ quantidade, grupos }) =>
+            distribuirQuantidadeEntreGrupos(quantidade, grupos).map((grupoItem) => ({
+              produto: item.produto,
+              unidade: item.unidade,
+              quantidade: grupoItem.quantidade,
+              grupo: grupoItem.grupo,
+            }))
+          );
+        }),
+      ...criarAuditoriaRegistro(
+        lista.find((romaneio) => romaneio.id === romaneioEditandoId)
+      ),
     };
 
     const novaLista =
@@ -399,6 +626,7 @@ function RomaneioPageClient({ editarParam }: { editarParam: string | null }) {
         escolas,
         cardapios,
         preparacoes,
+        produtos,
       })
     );
   }
@@ -417,6 +645,7 @@ function RomaneioPageClient({ editarParam }: { editarParam: string | null }) {
         escolas,
         cardapios,
         preparacoes,
+        produtos,
       })
     );
   }
@@ -437,8 +666,9 @@ function RomaneioPageClient({ editarParam }: { editarParam: string | null }) {
         escolas,
         cardapios,
         preparacoes,
+        produtos,
       }),
-    [escolaSelecionada, semana, escolas, cardapios, preparacoes]
+    [escolaSelecionada, semana, escolas, cardapios, preparacoes, produtos]
   );
 
   return (
@@ -607,101 +837,210 @@ function RomaneioPageClient({ editarParam }: { editarParam: string | null }) {
                 <thead>
                   <tr>
                     <th>Usar</th>
-                    <th>Grupo</th>
                     <th>Produto</th>
                     <th>Unidade</th>
-                    <th>Quantidade</th>
+                    <th>Creche</th>
+                    <th>Pré/Fund. Integral/AEE</th>
+                    <th>EJA</th>
+                    <th>Total</th>
                     <th>Saldo disponível</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {itensAjustados.map((item, index) => (
-                    <tr
-                      key={`${item.produto}-${item.grupo}-${index}`}
-                      className={!item.ativo ? styles.rowInactive : ""}
-                    >
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={item.ativo}
-                          onChange={() => toggleItem(index)}
-                        />
-                      </td>
-                      <td>{item.grupo}</td>
-                      <td>{item.produto}</td>
-                      <td>{item.unidade}</td>
-                      <td>
-                        <input
-                          className={styles.quantityInput}
-                          type="number"
-                          step="0.01"
-                          value={item.quantidade}
-                          onChange={(e) =>
-                            handleAlterarQuantidade(index, e.target.value)
-                          }
-                        />
-                      </td>
-                      <td>
-                        {getSaldoDisponivel(item.produto, item.grupo).toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
+                  {itensAjustados.map((item, index) => {
+                    const produtoAtual = findProdutoByName(produtos, item.produto);
+                    const resumoQuantidade = getResumoQuantidade(
+                      produtoAtual,
+                      item.quantidade,
+                      item.unidade
+                    );
+
+                    return (
+                      <tr
+                        key={`${item.produto}-${item.unidade}-${index}`}
+                        className={!item.ativo ? styles.rowInactive : ""}
+                      >
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={item.ativo}
+                            onChange={() => toggleItem(index)}
+                          />
+                        </td>
+                        <td>{item.produto}</td>
+                        <td>{item.unidade}</td>
+                        <td>
+                          <input
+                            className={styles.quantityInput}
+                            type="number"
+                            step="0.01"
+                            value={item.quantidadeCreche}
+                            onChange={(e) =>
+                              handleAlterarQuantidade(
+                                index,
+                                "quantidadeCreche",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className={styles.quantityInput}
+                            type="number"
+                            step="0.01"
+                            value={item.quantidadePreFundIntegralAee}
+                            onChange={(e) =>
+                              handleAlterarQuantidade(
+                                index,
+                                "quantidadePreFundIntegralAee",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className={styles.quantityInput}
+                            type="number"
+                            step="0.01"
+                            value={item.quantidadeEja}
+                            onChange={(e) =>
+                              handleAlterarQuantidade(
+                                index,
+                                "quantidadeEja",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <strong>{resumoQuantidade.base}</strong>
+                          {resumoQuantidade.compra && (
+                            <small className={styles.conversionHint}>
+                              Separar: {resumoQuantidade.compra}
+                            </small>
+                          )}
+                        </td>
+                        <td>{getSaldoDisponivel(item).toFixed(2)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             <div className={styles.mobileList}>
-              {itensAjustados.map((item, index) => (
-                <article
-                  key={`${item.produto}-${item.grupo}-mobile-${index}`}
-                  className={`${styles.itemCard} ${
-                    !item.ativo ? styles.itemCardInactive : ""
-                  }`}
-                >
-                  <div className={styles.itemCardHeader}>
-                    <div>
-                      <h3 className={styles.itemTitle}>{item.produto}</h3>
-                      <p className={styles.itemMeta}>{item.grupo}</p>
+              {itensAjustados.map((item, index) => {
+                const produtoAtual = findProdutoByName(produtos, item.produto);
+                const resumoQuantidade = getResumoQuantidade(
+                  produtoAtual,
+                  item.quantidade,
+                  item.unidade
+                );
+
+                return (
+                  <article
+                    key={`${item.produto}-${item.unidade}-mobile-${index}`}
+                    className={`${styles.itemCard} ${
+                      !item.ativo ? styles.itemCardInactive : ""
+                    }`}
+                  >
+                    <div className={styles.itemCardHeader}>
+                      <div>
+                        <h3 className={styles.itemTitle}>{item.produto}</h3>
+                        <p className={styles.itemMeta}>
+                          {item.gruposOrigem.map((grupo) => grupo.grupo).join(", ")}
+                        </p>
+                      </div>
+
+                      <label className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={item.ativo}
+                          onChange={() => toggleItem(index)}
+                        />
+                        <span>Usar</span>
+                      </label>
                     </div>
 
-                    <label className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={item.ativo}
-                        onChange={() => toggleItem(index)}
-                      />
-                      <span>Usar</span>
-                    </label>
-                  </div>
+                    <div className={styles.itemInfoGrid}>
+                      <div className={styles.itemInfo}>
+                        <span className={styles.itemInfoLabel}>Unidade</span>
+                        <strong>{item.unidade}</strong>
+                      </div>
 
-                  <div className={styles.itemInfoGrid}>
-                    <div className={styles.itemInfo}>
-                      <span className={styles.itemInfoLabel}>Unidade</span>
-                      <strong>{item.unidade}</strong>
+                      <div className={styles.itemInfo}>
+                        <span className={styles.itemInfoLabel}>Saldo</span>
+                        <strong>{getSaldoDisponivel(item).toFixed(2)}</strong>
+                      </div>
                     </div>
 
-                    <div className={styles.itemInfo}>
-                      <span className={styles.itemInfoLabel}>Saldo</span>
-                      <strong>
-                        {getSaldoDisponivel(item.produto, item.grupo).toFixed(2)}
-                      </strong>
-                    </div>
-                  </div>
+                    <div className={styles.fieldGrid}>
+                      <div className={styles.field}>
+                        <label>Creche</label>
+                        <input
+                          className={styles.quantityInput}
+                          type="number"
+                          step="0.01"
+                          value={item.quantidadeCreche}
+                          onChange={(e) =>
+                            handleAlterarQuantidade(
+                              index,
+                              "quantidadeCreche",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
 
-                  <div className={styles.field}>
-                    <label>Quantidade</label>
-                    <input
-                      className={styles.quantityInput}
-                      type="number"
-                      step="0.01"
-                      value={item.quantidade}
-                      onChange={(e) =>
-                        handleAlterarQuantidade(index, e.target.value)
-                      }
-                    />
-                  </div>
-                </article>
-              ))}
+                      <div className={styles.field}>
+                        <label>Pré/Fund. Integral/AEE</label>
+                        <input
+                          className={styles.quantityInput}
+                          type="number"
+                          step="0.01"
+                          value={item.quantidadePreFundIntegralAee}
+                          onChange={(e) =>
+                            handleAlterarQuantidade(
+                              index,
+                              "quantidadePreFundIntegralAee",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className={styles.field}>
+                        <label>EJA</label>
+                        <input
+                          className={styles.quantityInput}
+                          type="number"
+                          step="0.01"
+                          value={item.quantidadeEja}
+                          onChange={(e) =>
+                            handleAlterarQuantidade(
+                              index,
+                              "quantidadeEja",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className={styles.itemInfo}>
+                        <span className={styles.itemInfoLabel}>Total</span>
+                        <strong>{resumoQuantidade.base}</strong>
+                        {resumoQuantidade.compra && (
+                          <small className={styles.conversionHint}>
+                            Separar: {resumoQuantidade.compra}
+                          </small>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
 
             <div className={styles.footerActions}>

@@ -373,6 +373,13 @@
   color: var(--gray-600);
 }
 
+.signatureMeta {
+  margin-top: 4px;
+  color: var(--primary-800);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
 .totalBadge {
   padding: 8px 12px;
   border-radius: 999px;

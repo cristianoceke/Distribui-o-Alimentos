@@ -4,8 +4,15 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import type { RomaneioGerado } from "@/types/romaneio";
+import type { Produto } from "@/types/produto";
 import styles from "@/app/historico-romaneios/[index]/historico-romaneios.module.css";
 import { createId, readStorage, useHydrated } from "@/utils/storage";
+import {
+  findProdutoByName,
+  getCategoriaPerCapitaDoGrupo,
+  getResumoQuantidade,
+} from "@/utils/produtos";
+import { formatarAtualizadoPor, formatarCriadoPor } from "@/utils/auditoria";
 
 function hydrateRomaneios() {
   return readStorage<RomaneioGerado[]>("romaneios", []).map((romaneio) => ({
@@ -18,6 +25,7 @@ export default function RomaneioSalvoPage() {
   const params = useParams();
   const romaneioId = Array.isArray(params.index) ? params.index[0] : params.index;
   const hydrated = useHydrated();
+  const [produtos] = useState<Produto[]>(() => readStorage<Produto[]>("produtos", []));
   const [romaneio] = useState<RomaneioGerado | null>(() => {
     const lista = hydrateRomaneios();
     return lista.find((item) => item.id === romaneioId) ?? null;
@@ -36,6 +44,54 @@ export default function RomaneioSalvoPage() {
       year: "numeric",
     });
   }
+
+  const itensConsolidados = (romaneio?.itens ?? []).reduce<
+    Array<{
+      produto: string;
+      unidade: string;
+      quantidadeCreche: number;
+      quantidadePreFundIntegralAee: number;
+      quantidadeEja: number;
+      quantidade: number;
+    }>
+  >((acc, item) => {
+    const existente = acc.find(
+      (itemAcc) =>
+        itemAcc.produto === item.produto && itemAcc.unidade === item.unidade
+    );
+
+    const categoria = getCategoriaPerCapitaDoGrupo(item.grupo);
+    const alvo =
+      existente ??
+      (() => {
+        const novoItem = {
+          produto: item.produto,
+          unidade: item.unidade,
+          quantidadeCreche: 0,
+          quantidadePreFundIntegralAee: 0,
+          quantidadeEja: 0,
+          quantidade: 0,
+        };
+
+        acc.push(novoItem);
+        return novoItem;
+      })();
+
+    if (categoria === "creche") {
+      alvo.quantidadeCreche += item.quantidade;
+    } else if (categoria === "eja") {
+      alvo.quantidadeEja += item.quantidade;
+    } else {
+      alvo.quantidadePreFundIntegralAee += item.quantidade;
+    }
+
+    alvo.quantidade =
+      alvo.quantidadeCreche +
+      alvo.quantidadePreFundIntegralAee +
+      alvo.quantidadeEja;
+
+    return acc;
+  }, []);
 
   if (!romaneio) {
     return (
@@ -116,6 +172,20 @@ export default function RomaneioSalvoPage() {
           </div>
 
           <div className={styles.metaBox}>
+            <span className={styles.metaLabel}>Criado por</span>
+            <strong className={styles.metaValue}>
+              {formatarCriadoPor(romaneio) || "Não informado"}
+            </strong>
+          </div>
+
+          <div className={styles.metaBox}>
+            <span className={styles.metaLabel}>Última edição por</span>
+            <strong className={styles.metaValue}>
+              {formatarAtualizadoPor(romaneio) || "Não informado"}
+            </strong>
+          </div>
+
+          <div className={styles.metaBox}>
             <span className={styles.metaLabel}>Período de consumo</span>
             <strong className={styles.metaValue}>________________</strong>
           </div>
@@ -132,18 +202,46 @@ export default function RomaneioSalvoPage() {
             <tr>
               <th>DESCRIÇÃO PRODUTO</th>
               <th>UNIDADE</th>
-              <th>QUANT.</th>
+              <th>CRECHE</th>
+              <th>PRÉ/FUND. INTEGRAL/AEE</th>
+              <th>EJA</th>
+              <th>TOTAL</th>
               <th>QUANT. FORNEC.</th>
             </tr>
           </thead>
           <tbody>
-            {romaneio.itens.map((item, itemIndex) => (
-              <tr key={itemIndex}>
-                <td>{item.produto}</td>
-                <td className={styles.center}>{item.unidade}</td>
-                <td className={styles.center}>{item.quantidade.toFixed(2)}</td>
-                <td className={styles.center}></td>
-              </tr>
+            {itensConsolidados.map((item, itemIndex) => (
+              (() => {
+                const resumoQuantidade = getResumoQuantidade(
+                  findProdutoByName(produtos, item.produto),
+                  item.quantidade,
+                  item.unidade
+                );
+
+                return (
+                  <tr key={itemIndex}>
+                    <td>{item.produto}</td>
+                    <td className={styles.center}>{item.unidade}</td>
+                    <td className={styles.center}>{item.quantidadeCreche.toFixed(2)}</td>
+                    <td className={styles.center}>
+                      {item.quantidadePreFundIntegralAee.toFixed(2)}
+                    </td>
+                    <td className={styles.center}>{item.quantidadeEja.toFixed(2)}</td>
+                    <td className={styles.center}>
+                      <div>
+                        <strong>{resumoQuantidade.base}</strong>
+                        {resumoQuantidade.compra && (
+                          <>
+                            <br />
+                            <small>Separar: {resumoQuantidade.compra}</small>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td className={styles.center}></td>
+                  </tr>
+                );
+              })()
             ))}
           </tbody>
         </table>

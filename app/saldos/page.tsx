@@ -7,6 +7,12 @@ import type { SaldoLicitado } from "@/types/saldo";
 import type { PedidoSemanalGerado } from "@/types/pedido-semanal";
 import styles from "@/app/saldos/saldos.module.css";
 import { readStorage, useHydrated } from "@/utils/storage";
+import {
+  findProdutoByName,
+  formatarEquivalenciaCompra,
+  getDescricaoCompra,
+} from "@/utils/produtos";
+import { criarAuditoriaRegistro } from "@/utils/auditoria";
 
 function readProdutos() {
   return readStorage<Produto[]>("produtos", []);
@@ -53,6 +59,7 @@ export default function SaldosPage() {
   const [quantidade, setQuantidade] = useState("");
   const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
   const hydrated = useHydrated();
+  const produtoAtual = findProdutoByName(produtos, produtoSelecionado);
 
   const gruposFixos = [
     "creche 6 a 11 meses",
@@ -85,7 +92,7 @@ export default function SaldosPage() {
       return;
     }
 
-    const produto = produtos.find((p) => p.nome === produtoSelecionado);
+    const produto = findProdutoByName(produtos, produtoSelecionado);
     if (!produto) return;
 
     const jaExiste = saldos.some((item, index) => {
@@ -107,6 +114,9 @@ export default function SaldosPage() {
       unidade: produto.unidade,
       quantidadeContratada: Number(quantidade),
       quantidadeUtilizada: 0,
+      ...criarAuditoriaRegistro(
+        indiceEditando !== null ? saldos[indiceEditando] : undefined
+      ),
     };
 
     const novaLista = [...saldos];
@@ -165,7 +175,16 @@ export default function SaldosPage() {
   const totalSaldoCadastrado = useMemo(() => saldos.length, [saldos]);
 
   const totalProdutosComCritico = useMemo(() => {
-    return saldos.filter((item) => getStatus(item) === "critico").length;
+    return saldos.filter((item) => {
+      const saldoRestante = item.quantidadeContratada - item.quantidadeUtilizada;
+      const percentual =
+        item.quantidadeContratada > 0
+          ? (saldoRestante / item.quantidadeContratada) * 100
+          : 0;
+
+      if (saldoRestante <= 0) return true;
+      return percentual <= 20;
+    }).length;
   }, [saldos]);
 
   function getStatusLabel(status: string) {
@@ -257,6 +276,11 @@ export default function SaldosPage() {
                   </option>
                 ))}
               </select>
+              {produtoAtual && getDescricaoCompra(produtoAtual) && (
+                <span className={styles.fieldHint}>
+                  Compra cadastrada: {getDescricaoCompra(produtoAtual)}
+                </span>
+              )}
             </div>
 
             <div className={styles.field}>
@@ -318,7 +342,6 @@ export default function SaldosPage() {
                   <tr>
                     <th>Grupo</th>
                     <th>Produto</th>
-                    <th>Unidade</th>
                     <th>Contratado</th>
                     <th>Utilizado</th>
                     <th>Saldo</th>
@@ -341,13 +364,60 @@ export default function SaldosPage() {
                             <span className={styles.productIcon}>
                               <Boxes size={16} />
                             </span>
-                            <span>{item.produto}</span>
+                            <div className={styles.productTextBlock}>
+                              <span>{item.produto}</span>
+                              <small className={styles.valueHint}>{item.unidade}</small>
+                            </div>
                           </div>
                         </td>
-                        <td>{item.unidade}</td>
-                        <td>{item.quantidadeContratada}</td>
-                        <td>{item.quantidadeUtilizada.toFixed(2)}</td>
-                        <td>{saldoRestante.toFixed(2)}</td>
+                        <td>
+                          <div className={styles.valueWithHint}>
+                            <span>{item.quantidadeContratada}</span>
+                            {formatarEquivalenciaCompra(
+                              findProdutoByName(produtos, item.produto),
+                              item.quantidadeContratada
+                            ) && (
+                              <small className={styles.valueHint}>
+                                {formatarEquivalenciaCompra(
+                                  findProdutoByName(produtos, item.produto),
+                                  item.quantidadeContratada
+                                )}
+                              </small>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className={styles.valueWithHint}>
+                            <span>{item.quantidadeUtilizada.toFixed(2)}</span>
+                            {formatarEquivalenciaCompra(
+                              findProdutoByName(produtos, item.produto),
+                              item.quantidadeUtilizada
+                            ) && (
+                              <small className={styles.valueHint}>
+                                {formatarEquivalenciaCompra(
+                                  findProdutoByName(produtos, item.produto),
+                                  item.quantidadeUtilizada
+                                )}
+                              </small>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className={styles.valueWithHint}>
+                            <span>{saldoRestante.toFixed(2)}</span>
+                            {formatarEquivalenciaCompra(
+                              findProdutoByName(produtos, item.produto),
+                              saldoRestante
+                            ) && (
+                              <small className={styles.valueHint}>
+                                {formatarEquivalenciaCompra(
+                                  findProdutoByName(produtos, item.produto),
+                                  saldoRestante
+                                )}
+                              </small>
+                            )}
+                          </div>
+                        </td>
                         <td>
                           <span
                             className={`${styles.statusBadge} ${getStatusClass(
@@ -363,18 +433,20 @@ export default function SaldosPage() {
                               type="button"
                               onClick={() => handleEditar(index)}
                               className={styles.secondaryButton}
+                              title="Editar saldo"
+                              aria-label="Editar saldo"
                             >
                               <Pencil size={18} />
-                              <span>Editar</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleRemover(index)}
                               className={styles.dangerButton}
+                              title="Remover saldo"
+                              aria-label="Remover saldo"
                             >
                               <Trash2 size={18} />
-                              <span>Remover</span>
                             </button>
                           </div>
                         </td>

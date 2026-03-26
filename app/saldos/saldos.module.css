@@ -145,6 +145,12 @@
   color: var(--gray-500);
 }
 
+.fieldHint {
+  font-size: 0.82rem;
+  color: var(--gray-600);
+  line-height: 1.4;
+}
+
 .field input:focus,
 .field select:focus {
   border-color: var(--primary-600);
@@ -156,6 +162,10 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.tableActions {
+  gap: 8px;
 }
 
 .primaryButton,
@@ -173,6 +183,15 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.tableActions .secondaryButton,
+.tableActions .dangerButton {
+  height: 38px;
+  width: 38px;
+  padding: 0;
+  border-radius: 12px;
+  font-size: 0.82rem;
 }
 
 .primaryButton {
@@ -259,27 +278,28 @@
 
 .table {
   width: 100%;
-  min-width: 980px;
+  min-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   background: var(--white);
 }
 
 .table thead th {
-  padding: 14px 16px;
+  padding: 11px 8px;
   text-align: left;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--gray-700);
   background: var(--gray-50);
   border-bottom: 1px solid var(--gray-200);
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .table tbody td {
-  padding: 18px 16px;
+  padding: 12px 8px;
   border-bottom: 1px solid var(--gray-100);
   color: var(--gray-800);
   vertical-align: middle;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .table tbody tr:last-child td {
@@ -292,48 +312,73 @@
 
 .table th:nth-child(1),
 .table td:nth-child(1) {
-  min-width: 170px;
+  width: 17%;
 }
 
 .table th:nth-child(2),
 .table td:nth-child(2) {
-  min-width: 150px;
+  width: 21%;
 }
 
 .table th:nth-child(3),
 .table td:nth-child(3) {
-  min-width: 90px;
+  width: 15%;
 }
 
 .table th:nth-child(4),
 .table td:nth-child(4),
 .table th:nth-child(5),
-.table td:nth-child(5),
+.table td:nth-child(5) {
+  width: 14%;
+}
+
 .table th:nth-child(6),
 .table td:nth-child(6) {
-  min-width: 110px;
+  width: 10%;
 }
 
 .table th:nth-child(7),
 .table td:nth-child(7) {
-  min-width: 120px;
+  width: 9%;
 }
 
-.table th:nth-child(8),
-.table td:nth-child(8) {
-  min-width: 180px;
-}
-
+.table td:nth-child(3),
 .table td:nth-child(4),
-.table td:nth-child(5),
-.table td:nth-child(6) {
+.table td:nth-child(5) {
   font-variant-numeric: tabular-nums;
 }
 
 .productCell {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
   gap: 8px;
+  white-space: normal;
+  min-width: 0;
+}
+
+.productTextBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.productTextBlock span,
+.valueWithHint span,
+.valueHint {
+  overflow-wrap: anywhere;
+}
+
+.valueWithHint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.valueHint {
+  font-size: 0.78rem;
+  color: var(--gray-600);
+  line-height: 1.2;
 }
 
 .productIcon {
@@ -358,10 +403,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-weight: 700;
   white-space: nowrap;
 }

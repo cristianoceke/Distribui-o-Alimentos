@@ -1,3 +1,5 @@
+import type { AuditoriaRegistro } from "./auditoria"
+
 export type ItemPedidoSemanal = {
   grupo: string
   produto: string
@@ -6,7 +8,7 @@ export type ItemPedidoSemanal = {
   ativo: boolean
 }
 
-export type PedidoSemanalGerado = {
+export type PedidoSemanalGerado = AuditoriaRegistro & {
   id?: string
   grupo: string
   semana: string

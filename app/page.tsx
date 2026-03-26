@@ -22,6 +22,7 @@ import type { Preparacao } from "@/types/preparacao";
 import type { Cardapio } from "@/types/cardapio";
 import type { RomaneioGerado } from "@/types/romaneio";
 import { readStorage, useHydrated } from "@/utils/storage";
+import { formatarAtualizadoPor, formatarCriadoPor } from "@/utils/auditoria";
 
 type RefeicaoDia = {
   refeicao: string;
@@ -348,6 +349,16 @@ export default function Home() {
                         <p className={styles.romaneioMeta}>
                           Semana {romaneio.semana} • {formatarData(romaneio.dataGeracao)}
                         </p>
+                        {formatarCriadoPor(romaneio) && (
+                          <p className={styles.romaneioSignature}>
+                            {formatarCriadoPor(romaneio)}
+                          </p>
+                        )}
+                        {formatarAtualizadoPor(romaneio) && (
+                          <p className={styles.romaneioSignature}>
+                            {formatarAtualizadoPor(romaneio)}
+                          </p>
+                        )}
                       </div>
 
                       <span className={styles.romaneioBadge}>

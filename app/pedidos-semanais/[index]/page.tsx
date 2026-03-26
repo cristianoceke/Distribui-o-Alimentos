@@ -4,8 +4,11 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import type { PedidoSemanalGerado } from "@/types/pedido-semanal";
+import type { Produto } from "@/types/produto";
 import styles from "@/app/pedidos-semanais/[index]/pedidos-semanais.module.css";
 import { createId, readStorage, useHydrated } from "@/utils/storage";
+import { findProdutoByName, getResumoQuantidade } from "@/utils/produtos";
+import { formatarAtualizadoPor, formatarCriadoPor } from "@/utils/auditoria";
 
 function hydratePedidos() {
   return readStorage<PedidoSemanalGerado[]>("pedidos-semanais", []).map(
@@ -20,6 +23,7 @@ export default function PedidoSemanalSalvoPage() {
   const params = useParams();
   const pedidoId = Array.isArray(params.index) ? params.index[0] : params.index;
   const hydrated = useHydrated();
+  const [produtos] = useState<Produto[]>(() => readStorage<Produto[]>("produtos", []));
   const [pedido] = useState<PedidoSemanalGerado | null>(() => {
     const lista = hydratePedidos();
     return lista.find((item) => item.id === pedidoId) ?? null;
@@ -123,6 +127,20 @@ export default function PedidoSemanalSalvoPage() {
             <span className={styles.metaLabel}>Referência</span>
             <strong className={styles.metaValue}>Pedido semanal</strong>
           </div>
+
+          <div className={styles.metaBox}>
+            <span className={styles.metaLabel}>Criado por</span>
+            <strong className={styles.metaValue}>
+              {formatarCriadoPor(pedido) || "Não informado"}
+            </strong>
+          </div>
+
+          <div className={styles.metaBox}>
+            <span className={styles.metaLabel}>Última edição por</span>
+            <strong className={styles.metaValue}>
+              {formatarAtualizadoPor(pedido) || "Não informado"}
+            </strong>
+          </div>
         </div>
 
         <table className={styles.table}>
@@ -135,11 +153,31 @@ export default function PedidoSemanalSalvoPage() {
           </thead>
           <tbody>
             {pedido.itens.map((item, itemIndex) => (
-              <tr key={itemIndex}>
-                <td>{item.produto}</td>
-                <td className={styles.center}>{item.unidade}</td>
-                <td className={styles.center}>{item.quantidade.toFixed(2)}</td>
-              </tr>
+              (() => {
+                const resumoQuantidade = getResumoQuantidade(
+                  findProdutoByName(produtos, item.produto),
+                  item.quantidade,
+                  item.unidade
+                );
+
+                return (
+                  <tr key={itemIndex}>
+                    <td>{item.produto}</td>
+                    <td className={styles.center}>{item.unidade}</td>
+                    <td className={styles.center}>
+                      <div>
+                        <strong>{resumoQuantidade.base}</strong>
+                        {resumoQuantidade.compra && (
+                          <>
+                            <br />
+                            <small>Separar: {resumoQuantidade.compra}</small>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })()
             ))}
           </tbody>
         </table>

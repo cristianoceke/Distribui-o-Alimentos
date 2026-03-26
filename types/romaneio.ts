@@ -1,3 +1,5 @@
+import type { AuditoriaRegistro } from "./auditoria"
+
 export type ItemRomaneio = {
   produto: string
   unidade: string
@@ -5,7 +7,7 @@ export type ItemRomaneio = {
   grupo: string
 }
 
-export type RomaneioGerado = {
+export type RomaneioGerado = AuditoriaRegistro & {
   id?: string
   escola: string
   semana: string

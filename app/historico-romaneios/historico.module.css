@@ -157,6 +157,13 @@
   color: var(--gray-600);
 }
 
+.signatureMeta {
+  margin-top: 4px;
+  font-size: 0.84rem;
+  color: var(--primary-800);
+  font-weight: 600;
+}
+
 .itemsBadge {
   display: inline-flex;
   align-items: center;

@@ -295,6 +295,13 @@
   color: var(--gray-600);
 }
 
+.signatureMeta {
+  margin-top: 4px;
+  font-size: 0.84rem;
+  color: var(--primary-800);
+  font-weight: 600;
+}
+
 .itemBadge,
 .savedBadge {
   display: inline-flex;
@@ -313,6 +320,11 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.savedCard .cardActions {
+  margin-top: 18px;
+  padding-top: 2px;
 }
 
 .savedItemRow {

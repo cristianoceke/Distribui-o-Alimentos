@@ -26,6 +26,9 @@
 
   --topbar-height: 88px;
   --sidebar-width: 250px;
+  --page-padding-x: 24px;
+  --page-padding-bottom: 40px;
+  --municipio-logo-url: url("/BRASÃO-PMI1.png");
 }
 
 * {
@@ -75,18 +78,21 @@ textarea {
 }
 
 .topbar__content {
-  max-width: 1440px;
-  margin: 0 auto;
+  width: 100%;
   height: 100%;
-  padding: 0 24px;
+  padding: 8px 24px 8px 16px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
 .brand {
   display: flex;
+  flex: 1;
+  justify-content: flex-start;
   align-items: center;
-  gap: 14px;
+  gap: 0;
+  min-width: 0;
 }
 
 .menu-toggle {
@@ -107,13 +113,16 @@ textarea {
   padding: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   flex-shrink: 0;
   overflow: visible;
   background: transparent;
   border: none;
   box-shadow: none;
   backdrop-filter: none;
+  margin-left: 0;
+  margin-right: 0px;
+  transform: translateX(0);
 }
 
 .brand__logoImage {
@@ -123,11 +132,39 @@ textarea {
   max-height: 112px;
 }
 
+.topbar__municipio {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.topbar__municipioName {
+  color: var(--white);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: right;
+  max-width: 160px;
+}
+
+.topbar__municipioLogo {
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+  background-image: var(--municipio-logo-url);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
 .brand__text h1 {
   font-size: 1.5rem;
   color: var(--white);
   font-weight: 700;
   line-height: 1.1;
+  word-break: break-word;
 }
 
 .brand__text span {
@@ -135,6 +172,7 @@ textarea {
   margin-top: 4px;
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.82);
+  line-height: 1.3;
 }
 
 .app-body {
@@ -159,6 +197,9 @@ textarea {
   background: #f4f8f8;
   border-right: 1px solid var(--gray-200);
   padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   overflow-y: auto;
 }
 
@@ -168,9 +209,59 @@ textarea {
   gap: 8px;
 }
 
+.sidebar__footer {
+  margin-top: auto;
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.sidebar__userCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+}
+
+.sidebar__userIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-50);
+  color: var(--primary-800);
+  flex-shrink: 0;
+}
+
+.sidebar__userInfo {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.sidebar__userInfo strong {
+  font-size: 0.92rem;
+  color: var(--gray-900);
+  line-height: 1.2;
+}
+
+.sidebar__userInfo span {
+  font-size: 0.8rem;
+  color: var(--gray-600);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
 .sidebar__link {
   display: flex;
   align-items: center;
+  gap: 10px;
   min-height: 46px;
   padding: 0 14px;
   border-radius: 12px;
@@ -178,6 +269,16 @@ textarea {
   font-size: 0.96rem;
   font-weight: 500;
   transition: all 0.2s ease;
+}
+
+.sidebar__link svg,
+.sidebar__logout svg {
+  flex-shrink: 0;
+}
+
+.sidebar__link span,
+.sidebar__logout span {
+  line-height: 1.2;
 }
 
 .sidebar__link:hover {
@@ -191,6 +292,28 @@ textarea {
   box-shadow: 0 10px 20px rgba(20, 143, 143, 0.16);
 }
 
+.sidebar__logout {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(153, 27, 27, 0.12);
+  border-radius: 12px;
+  background: #fff4f4;
+  color: var(--danger);
+  font-size: 0.96rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar__logout:hover {
+  background: #ffeaea;
+  border-color: rgba(153, 27, 27, 0.18);
+}
+
 .sidebar-backdrop {
   display: none;
 }
@@ -201,18 +324,40 @@ textarea {
   height: calc(100vh - var(--topbar-height));
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 32px 24px 40px;
+  padding: 32px var(--page-padding-x) var(--page-padding-bottom);
 }
 
 .page-container {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  min-width: 0;
+}
+
+@media (max-width: 1280px) {
+  :root {
+    --sidebar-width: 228px;
+    --page-padding-x: 20px;
+    --page-padding-bottom: 32px;
+  }
+
+  .brand__logoImage {
+    max-width: 250px;
+    max-height: 100px;
+  }
+
+  .brand__text h1 {
+    font-size: 1.35rem;
+  }
+
+  .brand__text span {
+    font-size: 0.82rem;
+  }
 }
 
 @media (max-width: 1024px) {
   .page-content {
-    padding: 24px 20px 32px;
+    padding: 24px var(--page-padding-x) var(--page-padding-bottom);
   }
 
   .brand__text h1 {
@@ -257,11 +402,7 @@ textarea {
   .page-content {
     margin-left: 0;
     width: 100%;
-    padding: 20px 18px 28px;
-  }
-
-  .topbar__content {
-    padding: 0 18px;
+    padding: 20px var(--page-padding-x) 28px;
   }
 }
 
@@ -269,6 +410,8 @@ textarea {
   :root {
     --topbar-height: 80px;
     --sidebar-width: 270px;
+    --page-padding-x: 16px;
+    --page-padding-bottom: 24px;
   }
 
   .brand {
@@ -277,6 +420,7 @@ textarea {
 
   .brand__badge {
     max-width: 150px;
+    transform: translateX(0);
   }
 
   .brand__logoImage {
@@ -284,16 +428,30 @@ textarea {
     max-height: 76px;
   }
 
+  .topbar__municipio {
+    gap: 8px;
+    margin-left: 10px;
+  }
+
+  .topbar__municipioName {
+    max-width: 110px;
+    font-size: 0.72rem;
+  }
+
+  .topbar__municipioLogo {
+    width: 46px;
+    height: 46px;
+  }
+
   .brand__text h1 {
     font-size: 1.08rem;
   }
 
   .brand__text span {
-    font-size: 0.75rem;
-    line-height: 1.2;
+    display: none;
   }
 
-  .page-content {
-    padding: 16px 16px 24px;
+  .topbar__content {
+    padding: 0 var(--page-padding-x) 0 12px;
   }
 }

@@ -16,12 +16,20 @@ import type { Escola } from "@/types/escola";
 import type { Cardapio } from "@/types/cardapio";
 import type { Preparacao } from "@/types/preparacao";
 import type { SaldoLicitado } from "@/types/saldo";
+import type { Produto } from "@/types/produto";
 import type {
   ItemPedidoSemanal,
   PedidoSemanalGerado,
 } from "@/types/pedido-semanal";
 import styles from "./pedidos-semanais.module.css";
 import { createId, readStorage, useHydrated } from "@/utils/storage";
+import { criarAuditoriaRegistro } from "@/utils/auditoria";
+import { formatarAtualizadoPor, formatarCriadoPor } from "@/utils/auditoria";
+import {
+  findProdutoByName,
+  getPerCapitaProdutoPorGrupo,
+  getResumoQuantidade,
+} from "@/utils/produtos";
 
 type ItemAjustado = ItemPedidoSemanal;
 
@@ -49,6 +57,7 @@ function calcularItensPedido(params: {
   semanaSelecionada: string;
   cardapios: Cardapio[];
   preparacoes: Preparacao[];
+  produtos: Produto[];
   totalAlunosGrupo: number;
 }) {
   const {
@@ -56,6 +65,7 @@ function calcularItensPedido(params: {
     semanaSelecionada,
     cardapios,
     preparacoes,
+    produtos,
     totalAlunosGrupo,
   } = params;
 
@@ -77,13 +87,19 @@ function calcularItensPedido(params: {
 
     if (!preparacao) return [];
 
-    return preparacao.ingredientes.map((ingrediente) => ({
-      grupo: grupoSelecionado,
-      produto: ingrediente.produto,
-      unidade: ingrediente.unidade,
-      quantidade: Number(ingrediente.quantidade) * totalAlunosGrupo,
-      ativo: true,
-    }));
+    return preparacao.ingredientes.map((ingrediente) => {
+      const produtoAtual = findProdutoByName(produtos, ingrediente.produto);
+
+      return {
+        grupo: grupoSelecionado,
+        produto: ingrediente.produto,
+        unidade: produtoAtual?.unidade ?? ingrediente.unidade,
+        quantidade:
+          getPerCapitaProdutoPorGrupo(produtoAtual, grupoSelecionado) *
+          totalAlunosGrupo,
+        ativo: true,
+      };
+    });
   });
 
   return itensCalculados.reduce((acc, item) => {
@@ -124,6 +140,7 @@ export default function PedidosSemanaisPage() {
   const [preparacoes] = useState<Preparacao[]>(() =>
     readStorage<Preparacao[]>("preparacoes", [])
   );
+  const [produtos] = useState<Produto[]>(() => readStorage<Produto[]>("produtos", []));
   const [saldos, setSaldos] = useState<SaldoLicitado[]>(() =>
     readStorage<SaldoLicitado[]>("saldos", [])
   );
@@ -239,6 +256,9 @@ export default function PedidosSemanaisPage() {
           ...item,
           quantidade: Number(item.quantidade.toFixed(2)),
         })),
+      ...criarAuditoriaRegistro(
+        pedidosGerados.find((pedido) => pedido.id === pedidoEditandoId)
+      ),
     };
 
     const novaLista =
@@ -290,6 +310,7 @@ export default function PedidosSemanaisPage() {
         semanaSelecionada,
         cardapios,
         preparacoes,
+        produtos,
         totalAlunosGrupo: calcularTotalAlunosGrupo(escolas, novoGrupo),
       })
     );
@@ -308,6 +329,7 @@ export default function PedidosSemanaisPage() {
         semanaSelecionada: novaSemana,
         cardapios,
         preparacoes,
+        produtos,
         totalAlunosGrupo,
       })
     );
@@ -524,6 +546,11 @@ export default function PedidosSemanaisPage() {
                       item.grupo,
                       item.quantidade
                     );
+                    const resumoQuantidade = getResumoQuantidade(
+                      findProdutoByName(produtos, item.produto),
+                      item.quantidade,
+                      item.unidade
+                    );
 
                     return (
                       <tr
@@ -550,6 +577,14 @@ export default function PedidosSemanaisPage() {
                               handleAlterarQuantidade(index, event.target.value)
                             }
                           />
+                          <small className={styles.conversionHint}>
+                            Base: {resumoQuantidade.base}
+                          </small>
+                          {resumoQuantidade.compra && (
+                            <small className={styles.conversionHint}>
+                              Separar: {resumoQuantidade.compra}
+                            </small>
+                          )}
                         </td>
 
                         <td>{saldoDisponivel.toFixed(2)}</td>
@@ -598,6 +633,14 @@ export default function PedidosSemanaisPage() {
                     <p className={styles.historyMeta}>
                       Semana {pedido.semana} • {formatarData(pedido.dataGeracao)}
                     </p>
+                    {formatarCriadoPor(pedido) && (
+                      <p className={styles.signatureMeta}>{formatarCriadoPor(pedido)}</p>
+                    )}
+                    {formatarAtualizadoPor(pedido) && (
+                      <p className={styles.signatureMeta}>
+                        {formatarAtualizadoPor(pedido)}
+                      </p>
+                    )}
                   </div>
 
                   <span className={styles.historyBadge}>

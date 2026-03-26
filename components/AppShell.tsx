@@ -1,15 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
+import { clearSessaoUsuario, readSessaoUsuario } from "@/utils/auth";
+import { usePathname, useRouter } from "next/navigation";
+import { useHydrated } from "@/utils/storage";
 
 type AppShellProps = {
   children: React.ReactNode;
 };
 
+const CIDADE_SISTEMA = "Itaporanga d'Ajuda";
+
 export default function AppShell({ children }: AppShellProps) {
   const [menuAberto, setMenuAberto] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const hydrated = useHydrated();
+  const sessao = hydrated ? readSessaoUsuario() : null;
 
   function toggleMenu() {
     setMenuAberto((prev) => !prev);
@@ -17,6 +26,36 @@ export default function AppShell({ children }: AppShellProps) {
 
   function fecharMenu() {
     setMenuAberto(false);
+  }
+
+  function handleLogout() {
+    clearSessaoUsuario();
+    setMenuAberto(false);
+    router.push("/login");
+  }
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const estaNaTelaLogin = pathname === "/login";
+
+    if (!sessao && !estaNaTelaLogin) {
+      router.push("/login");
+      return;
+    }
+
+    if (sessao && estaNaTelaLogin) {
+      router.push("/");
+      return;
+    }
+  }, [hydrated, pathname, router, sessao]);
+
+  if (!hydrated) {
+    return null;
+  }
+
+  if (pathname === "/login") {
+    return <>{children}</>;
   }
 
   return (
@@ -50,6 +89,11 @@ export default function AppShell({ children }: AppShellProps) {
               <span>Gestão de escolas, cardápios e romaneios</span>
             </div>
           </div>
+
+          <div className="topbar__municipio">
+            <span className="topbar__municipioName">{CIDADE_SISTEMA}</span>
+            <div className="topbar__municipioLogo" aria-hidden="true" />
+          </div>
         </div>
       </header>
 
@@ -68,7 +112,11 @@ export default function AppShell({ children }: AppShellProps) {
             menuAberto ? "sidebar-wrapper--open" : ""
           }`}
         >
-          <Sidebar onNavigate={fecharMenu} />
+          <Sidebar
+            onNavigate={fecharMenu}
+            onLogout={handleLogout}
+            sessaoUsuario={sessao}
+          />
         </div>
 
         <main className="page-content">

@@ -3,6 +3,8 @@
 import { Pencil, Trash2, X, Package2 } from "lucide-react";
 import type { Produto } from "@/types/produto";
 import styles from "@/components/ListaProdutos.module.css";
+import { getDescricaoCompra } from "@/utils/produtos";
+import { formatarAtualizadoPor, formatarCriadoPor } from "@/utils/auditoria";
 
 type ListaProdutosProps = {
   produtos: Produto[];
@@ -52,6 +54,31 @@ export default function ListaProdutos({
                   <p className={styles.productMeta}>
                     Unidade: {produto.unidade}
                   </p>
+                  {getDescricaoCompra(produto) && (
+                    <p className={styles.productMeta}>
+                      Compra: {getDescricaoCompra(produto)}
+                    </p>
+                  )}
+                  {formatarCriadoPor(produto) && (
+                    <p className={styles.signatureMeta}>{formatarCriadoPor(produto)}</p>
+                  )}
+                  {formatarAtualizadoPor(produto) && (
+                    <p className={styles.signatureMeta}>
+                      {formatarAtualizadoPor(produto)}
+                    </p>
+                  )}
+                  <div className={styles.perCapitaGrid}>
+                    <p className={styles.productMeta}>
+                      Creche: {produto.perCapitaCreche ?? 0} {produto.unidade}
+                    </p>
+                    <p className={styles.productMeta}>
+                      Pré/Fund. Integral/AEE:{" "}
+                      {produto.perCapitaPreFundIntegralAee ?? 0} {produto.unidade}
+                    </p>
+                    <p className={styles.productMeta}>
+                      EJA: {produto.perCapitaEja ?? 0} {produto.unidade}
+                    </p>
+                  </div>
                 </div>
               </div>
 

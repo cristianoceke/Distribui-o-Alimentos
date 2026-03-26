@@ -6,6 +6,7 @@ import { Eye, Pencil, Trash2 } from "lucide-react";
 import type { RomaneioGerado } from "@/types/romaneio";
 import styles from "@/app/historico-romaneios/historico.module.css";
 import { createId, readStorage, useHydrated } from "@/utils/storage";
+import { formatarAtualizadoPor, formatarCriadoPor } from "@/utils/auditoria";
 
 function hydrateRomaneios() {
   return readStorage<RomaneioGerado[]>("romaneios", []).map((romaneio) => ({
@@ -119,6 +120,14 @@ export default function HistoricoRomaneiosPage() {
                     <p className={styles.metaText}>
                       Semana {romaneio.semana} • {formatarData(romaneio.dataGeracao)}
                     </p>
+                    {formatarCriadoPor(romaneio) && (
+                      <p className={styles.signatureMeta}>{formatarCriadoPor(romaneio)}</p>
+                    )}
+                    {formatarAtualizadoPor(romaneio) && (
+                      <p className={styles.signatureMeta}>
+                        {formatarAtualizadoPor(romaneio)}
+                      </p>
+                    )}
                   </div>
 
                   <span className={styles.itemsBadge}>

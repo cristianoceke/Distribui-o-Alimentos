@@ -76,6 +76,7 @@
   border-radius: 22px;
   padding: 24px;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  min-width: 0;
 }
 
 .panelHeader {
@@ -209,24 +210,25 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 860px;
+  min-width: 980px;
   background: var(--white);
 }
 
 .table thead th {
   background: var(--gray-50);
   color: var(--gray-700);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 700;
   text-align: left;
-  padding: 14px 16px;
+  padding: 12px 10px;
   border-bottom: 1px solid var(--gray-200);
+  white-space: nowrap;
 }
 
 .table tbody td {
-  padding: 14px 16px;
+  padding: 12px 10px;
   border-bottom: 1px solid var(--gray-200);
-  font-size: 0.94rem;
+  font-size: 0.9rem;
   color: var(--gray-900);
   vertical-align: middle;
 }
@@ -242,13 +244,21 @@
 
 .quantityInput {
   height: 42px;
-  width: 110px;
+  width: min(100%, 108px);
   border: 1px solid var(--gray-200);
   border-radius: 12px;
   padding: 0 12px;
   outline: none;
   background: var(--white);
   color: var(--gray-900);
+}
+
+.conversionHint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--gray-600);
+  line-height: 1.2;
 }
 
 .footerActions {
@@ -392,10 +402,19 @@
   .contentGrid {
     grid-template-columns: 1fr;
   }
+
+  .table {
+    min-width: 700px;
+  }
 }
 
 @media (max-width: 900px) {
   .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldGrid,
+  .itemInfoGrid {
     grid-template-columns: 1fr;
   }
 }

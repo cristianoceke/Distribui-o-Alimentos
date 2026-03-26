@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import styles from "@/app/pratos/pratos.module.css";
 import { createId, readStorage, useHydrated } from "@/utils/storage";
+import { criarAuditoriaRegistro } from "@/utils/auditoria";
 
 function hydratePreparacoes() {
   return readStorage<Preparacao[]>("preparacoes", []).map((preparacao) => ({
@@ -69,6 +70,9 @@ export default function PreparacoesPage() {
         indiceEditando !== null
           ? preparacoes[indiceEditando]?.ingredientes || []
           : [],
+      ...criarAuditoriaRegistro(
+        indiceEditando !== null ? preparacoes[indiceEditando] : undefined
+      ),
     };
 
     const novaLista = [...preparacoes];
@@ -181,8 +185,7 @@ export default function PreparacoesPage() {
 
             <div className={styles.infoBox}>
               Depois de cadastrar o prato, use a opção{" "}
-              <strong>Montar receita</strong> para definir os ingredientes e as
-              quantidades per capita.
+              <strong>Montar receita</strong> para definir os ingredientes.
             </div>
 
             {erro && <div className={styles.errorBox}>{erro}</div>}

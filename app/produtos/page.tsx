@@ -6,8 +6,10 @@ import ListaProdutos from "@/components/ListaProdutos";
 import type { Produto } from "@/types/produto";
 import styles from "@/app/produtos/produtos.module.css";
 import { createId, readStorage, useHydrated } from "@/utils/storage";
+import { criarAuditoriaRegistro } from "@/utils/auditoria";
 
 const unidades = ["Kg", "g", "litro", "unidade"];
+const unidadesCompra = ["", "pacote", "fardo", "caixa", "saco", "bandeja", "unidade"];
 
 const categorias = [
   "hortifruti",
@@ -29,6 +31,11 @@ function hydrateProdutos() {
 export default function ProdutosPage() {
   const [nome, setNome] = useState("");
   const [unidade, setUnidade] = useState("Kg");
+  const [unidadeCompra, setUnidadeCompra] = useState("");
+  const [quantidadePorUnidadeCompra, setQuantidadePorUnidadeCompra] = useState("");
+  const [perCapitaCreche, setPerCapitaCreche] = useState("");
+  const [perCapitaPreFundIntegralAee, setPerCapitaPreFundIntegralAee] = useState("");
+  const [perCapitaEja, setPerCapitaEja] = useState("");
   const [categoria, setCategoria] = useState("");
   const [produtos, setProdutos] = useState<Produto[]>(hydrateProdutos);
   const [erro, setErro] = useState("");
@@ -42,6 +49,11 @@ export default function ProdutosPage() {
   function limparFormulario() {
     setNome("");
     setUnidade("Kg");
+    setUnidadeCompra("");
+    setQuantidadePorUnidadeCompra("");
+    setPerCapitaCreche("");
+    setPerCapitaPreFundIntegralAee("");
+    setPerCapitaEja("");
     setCategoria("");
     setErro("");
     setProdutoEditandoId(null);
@@ -63,6 +75,11 @@ export default function ProdutosPage() {
       return;
     }
 
+    if (!perCapitaCreche || !perCapitaPreFundIntegralAee || !perCapitaEja) {
+      setErro("Informe as tres per capitas do produto.");
+      return;
+    }
+
     if (produtoJaExiste) {
       setErro("Já existe um produto com esse nome.");
       return;
@@ -72,8 +89,23 @@ export default function ProdutosPage() {
       id: produtoEditandoId ?? createId("produto"),
       nome: nome.trim(),
       unidade,
+      unidadeCompra: unidadeCompra || undefined,
+      quantidadePorUnidadeCompra: unidadeCompra
+        ? Number(quantidadePorUnidadeCompra || 0)
+        : undefined,
+      perCapitaCreche: Number(perCapitaCreche || 0),
+      perCapitaPreFundIntegralAee: Number(perCapitaPreFundIntegralAee || 0),
+      perCapitaEja: Number(perCapitaEja || 0),
       categoria,
+      ...criarAuditoriaRegistro(
+        produtos.find((produto) => produto.id === produtoEditandoId)
+      ),
     };
+
+    if (unidadeCompra && !quantidadePorUnidadeCompra) {
+      setErro("Informe quanto existe em cada unidade de compra.");
+      return;
+    }
 
     const novaLista =
       produtoEditandoId === null
@@ -105,7 +137,22 @@ export default function ProdutosPage() {
 
     setNome(produto.nome);
     setUnidade(produto.unidade);
+    setUnidadeCompra(produto.unidadeCompra ?? "");
+    setQuantidadePorUnidadeCompra(
+      produto.quantidadePorUnidadeCompra
+        ? String(produto.quantidadePorUnidadeCompra)
+        : ""
+    );
     setCategoria(produto.categoria);
+    setPerCapitaCreche(
+      produto.perCapitaCreche ? String(produto.perCapitaCreche) : ""
+    );
+    setPerCapitaPreFundIntegralAee(
+      produto.perCapitaPreFundIntegralAee
+        ? String(produto.perCapitaPreFundIntegralAee)
+        : ""
+    );
+    setPerCapitaEja(produto.perCapitaEja ? String(produto.perCapitaEja) : "");
     setProdutoEditandoId(produto.id ?? null);
     setErro("");
   }
@@ -155,7 +202,7 @@ export default function ProdutosPage() {
                 {produtoEditandoId === null ? "Novo produto" : "Editar produto"}
               </h2>
               <p className={styles.panelText}>
-                Informe nome, unidade de medida e categoria do alimento.
+                Informe nome, unidade, categoria e as tres per capitas usadas no calculo.
               </p>
             </div>
 
@@ -212,6 +259,111 @@ export default function ProdutosPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className={`${styles.fieldGrid} ${styles.alignedFieldGrid}`}>
+              <div className={styles.field}>
+                <label htmlFor="unidadeCompra" className={styles.alignedLabel}>
+                  Compra por
+                </label>
+                <select
+                  id="unidadeCompra"
+                  value={unidadeCompra}
+                  onChange={(event) => {
+                    setUnidadeCompra(event.target.value);
+
+                    if (!event.target.value) {
+                      setQuantidadePorUnidadeCompra("");
+                    }
+                  }}
+                >
+                  <option value="">Sem conversão</option>
+                  {unidadesCompra
+                    .filter((item) => item)
+                    .map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
+                <label
+                  htmlFor="quantidadePorUnidadeCompra"
+                  className={styles.alignedLabel}
+                >
+                  Quantidade por embalagem
+                </label>
+                <input
+                  id="quantidadePorUnidadeCompra"
+                  type="number"
+                  step="0.01"
+                  value={quantidadePorUnidadeCompra}
+                  onChange={(event) => setQuantidadePorUnidadeCompra(event.target.value)}
+                  placeholder={`Ex.: 0.5 ${unidade}`}
+                  disabled={!unidadeCompra}
+                />
+              </div>
+            </div>
+
+            <div className={styles.sectionBlock}>
+              <div className={styles.sectionHeader}>
+                <h3>Per capitas por publico</h3>
+                <p>
+                  Defina a quantidade base para creche, pre/fund. integral/AEE e EJA.
+                </p>
+              </div>
+
+              <div className={`${styles.fieldGrid} ${styles.alignedFieldGrid}`}>
+                <div className={styles.field}>
+                  <label htmlFor="perCapitaCreche" className={styles.alignedLabel}>
+                    Per capita creche
+                  </label>
+                  <input
+                    id="perCapitaCreche"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={perCapitaCreche}
+                    onChange={(event) => setPerCapitaCreche(event.target.value)}
+                    placeholder={`Ex.: 0.08 ${unidade}`}
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label
+                    htmlFor="perCapitaPreFundIntegralAee"
+                    className={styles.alignedLabel}
+                  >
+                    Per capita pre/fund. integral/AEE
+                  </label>
+                  <input
+                    id="perCapitaPreFundIntegralAee"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={perCapitaPreFundIntegralAee}
+                    onChange={(event) =>
+                      setPerCapitaPreFundIntegralAee(event.target.value)
+                    }
+                    placeholder={`Ex.: 0.1 ${unidade}`}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label htmlFor="perCapitaEja">Per capita EJA</label>
+                <input
+                  id="perCapitaEja"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={perCapitaEja}
+                  onChange={(event) => setPerCapitaEja(event.target.value)}
+                  placeholder={`Ex.: 0.12 ${unidade}`}
+                />
               </div>
             </div>
 

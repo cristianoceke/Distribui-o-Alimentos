@@ -6,6 +6,8 @@ import type { Cardapio, ItemCardapio } from "@/types/cardapio";
 import type { Preparacao } from "@/types/preparacao";
 import styles from "@/app/cardapios/cardapios.module.css";
 import { readStorage, useHydrated } from "@/utils/storage";
+import { criarAuditoriaRegistro } from "@/utils/auditoria";
+import { formatarAtualizadoPor, formatarCriadoPor } from "@/utils/auditoria";
 
 const gruposCardapio = [
   "creche 6 a 11 meses",
@@ -136,6 +138,9 @@ export default function CardapiosPage() {
       grupo,
       semana,
       itens,
+      ...criarAuditoriaRegistro(
+        indiceEditando !== null ? cardapios[indiceEditando] : undefined
+      ),
     };
 
     const novaLista = [...cardapios];
@@ -487,6 +492,14 @@ export default function CardapiosPage() {
                     <div>
                       <h3 className={styles.savedTitle}>{cardapio.grupo}</h3>
                       <p className={styles.savedMeta}>Semana {cardapio.semana}</p>
+                      {formatarCriadoPor(cardapio) && (
+                        <p className={styles.signatureMeta}>{formatarCriadoPor(cardapio)}</p>
+                      )}
+                      {formatarAtualizadoPor(cardapio) && (
+                        <p className={styles.signatureMeta}>
+                          {formatarAtualizadoPor(cardapio)}
+                        </p>
+                      )}
                     </div>
 
                     <span className={styles.savedBadge}>

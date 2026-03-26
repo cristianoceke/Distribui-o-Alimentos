@@ -15,10 +15,10 @@ import styles from "./receita.module.css";
 import type { Preparacao } from "@/types/preparacao";
 import type { Produto } from "@/types/produto";
 import { readStorage, useHydrated } from "@/utils/storage";
+import { criarAuditoriaRegistro } from "@/utils/auditoria";
 
 type IngredienteReceita = {
   produto: string;
-  quantidade: string;
   unidade: string;
 };
 
@@ -31,12 +31,11 @@ export default function ReceitaPreparacaoPage() {
     !Number.isNaN(indiceNumero) ? preparacoes[indiceNumero] : undefined;
 
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
-  const [quantidade, setQuantidade] = useState("");
   const [ingredientes, setIngredientes] = useState<IngredienteReceita[]>(
     Array.isArray(preparacaoAtual?.ingredientes)
       ? preparacaoAtual.ingredientes.map((ingrediente) => ({
-          ...ingrediente,
-          quantidade: String(ingrediente.quantidade),
+          produto: ingrediente.produto,
+          unidade: ingrediente.unidade,
         }))
       : []
   );
@@ -49,15 +48,14 @@ export default function ReceitaPreparacaoPage() {
 
   function limparFormulario() {
     setProdutoSelecionado("");
-    setQuantidade("");
     setErro("");
     setSucesso("");
     setIndiceEditando(null);
   }
 
   function handleAdicionarIngrediente() {
-    if (!produtoSelecionado || !quantidade) {
-      setErro("Selecione um produto e informe a quantidade.");
+    if (!produtoSelecionado) {
+      setErro("Selecione um produto.");
       setSucesso("");
       return;
     }
@@ -86,7 +84,6 @@ export default function ReceitaPreparacaoPage() {
 
     const novoIngrediente: IngredienteReceita = {
       produto: produtoSelecionado,
-      quantidade,
       unidade: produtoEncontrado.unidade,
     };
 
@@ -117,7 +114,6 @@ export default function ReceitaPreparacaoPage() {
     const ingrediente = ingredientes[indexParaEditar];
 
     setProdutoSelecionado(ingrediente.produto);
-    setQuantidade(ingrediente.quantidade);
     setIndiceEditando(indexParaEditar);
     setErro("");
     setSucesso("");
@@ -139,13 +135,16 @@ export default function ReceitaPreparacaoPage() {
     listaPreparacoes[indiceNumero].ingredientes = ingredientes.map(
       (ingrediente) => ({
         ...ingrediente,
-        quantidade: Number(ingrediente.quantidade),
+        quantidade: 0,
       })
     );
+    listaPreparacoes[indiceNumero] = {
+      ...listaPreparacoes[indiceNumero],
+      ...criarAuditoriaRegistro(listaPreparacoes[indiceNumero]),
+    };
     localStorage.setItem("preparacoes", JSON.stringify(listaPreparacoes));
 
     setProdutoSelecionado("");
-    setQuantidade("");
     setErro("");
     setSucesso("Receita salva com sucesso.");
     setIndiceEditando(null);
@@ -171,7 +170,7 @@ export default function ReceitaPreparacaoPage() {
           <p className={styles.eyebrow}>Montagem da receita</p>
           <h1 className={styles.title}>Receita da preparação</h1>
           <p className={styles.description}>
-            Defina os ingredientes e as quantidades per capita da preparação.
+            Defina apenas os ingredientes que compõem a preparação.
           </p>
         </div>
 
@@ -207,7 +206,7 @@ export default function ReceitaPreparacaoPage() {
                   : "Editar ingrediente"}
               </h2>
               <p className={styles.panelText}>
-                Escolha um produto cadastrado e informe a quantidade per capita.
+                Escolha um produto cadastrado para compor a preparação.
               </p>
             </div>
 
@@ -238,23 +237,6 @@ export default function ReceitaPreparacaoPage() {
             </div>
 
             <div className={styles.fieldGrid}>
-              <div className={styles.field}>
-                <label htmlFor="quantidade">Quantidade per capita</label>
-                <input
-                  id="quantidade"
-                  type="number"
-                  min="0"
-                  step="any"
-                  placeholder="Ex.: 0.08"
-                  value={quantidade}
-                  onChange={(event) => {
-                    setQuantidade(event.target.value);
-                    setErro("");
-                    setSucesso("");
-                  }}
-                />
-              </div>
-
               <div className={styles.field}>
                 <label>Unidade</label>
                 <div className={styles.readonlyField}>{unidadeAtual}</div>
@@ -326,7 +308,7 @@ export default function ReceitaPreparacaoPage() {
                             {ingrediente.produto}
                           </h3>
                           <p className={styles.ingredientMeta}>
-                            {ingrediente.quantidade} {ingrediente.unidade} por aluno
+                            Item usado na preparação
                           </p>
                         </div>
 

@@ -1,4 +1,6 @@
-export type SaldoLicitado = {
+import type { AuditoriaRegistro } from "./auditoria"
+
+export type SaldoLicitado = AuditoriaRegistro & {
   grupo: string
   produto: string
   unidade: string

@@ -121,6 +121,10 @@
   gap: 16px;
 }
 
+.alignedFieldGrid {
+  align-items: start;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -132,6 +136,12 @@
   font-weight: 600;
   color: var(--gray-700);
   text-transform: capitalize;
+}
+
+.alignedLabel {
+  min-height: 44px;
+  display: flex;
+  align-items: flex-end;
 }
 
 .field input,
