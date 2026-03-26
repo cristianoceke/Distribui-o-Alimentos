@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "@/components/Sidebar";
 import { clearSessaoUsuario, readSessaoUsuario } from "@/utils/auth";
 import { usePathname, useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ const CIDADE_SISTEMA = "Itaporanga d'Ajuda";
 
 export default function AppShell({ children }: AppShellProps) {
   const [menuAberto, setMenuAberto] = useState(false);
+  const pageContentRef = useRef<HTMLElement | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const hydrated = useHydrated();
@@ -49,6 +50,32 @@ export default function AppShell({ children }: AppShellProps) {
       return;
     }
   }, [hydrated, pathname, router, sessao]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const estaNaTelaLogin = pathname === "/login";
+    document.body.style.overflow = estaNaTelaLogin ? "auto" : "hidden";
+    document.documentElement.style.overflow = estaNaTelaLogin ? "auto" : "hidden";
+
+    return () => {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname === "/login") {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      pageContentRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+  }, [pathname]);
 
   if (!hydrated) {
     return null;
@@ -119,7 +146,7 @@ export default function AppShell({ children }: AppShellProps) {
           />
         </div>
 
-        <main className="page-content">
+        <main ref={pageContentRef} className="page-content">
           <div className="page-container">{children}</div>
         </main>
       </div>

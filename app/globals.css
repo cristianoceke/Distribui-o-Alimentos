@@ -183,7 +183,7 @@ textarea {
 
 .app-body {
   display: flex;
-  height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
   margin-top: var(--topbar-height);
   overflow: hidden;
 }
@@ -193,7 +193,7 @@ textarea {
   top: var(--topbar-height);
   left: 0;
   width: var(--sidebar-width);
-  height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
   z-index: 900;
 }
 
@@ -327,10 +327,11 @@ textarea {
 .page-content {
   margin-left: var(--sidebar-width);
   width: calc(100% - var(--sidebar-width));
-  height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
   overflow-y: auto;
   overflow-x: hidden;
   padding: 32px var(--page-padding-x) var(--page-padding-bottom);
+  -webkit-overflow-scrolling: touch;
 }
 
 .page-container {
