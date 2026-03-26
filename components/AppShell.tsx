@@ -119,7 +119,14 @@ export default function AppShell({ children }: AppShellProps) {
 
           <div className="topbar__municipio">
             <span className="topbar__municipioName">{CIDADE_SISTEMA}</span>
-            <div className="topbar__municipioLogo" aria-hidden="true" />
+            <Image
+              src="/BRASÃO-PMI1.png"
+              alt="Brasão do município"
+              width={62}
+              height={62}
+              className="topbar__municipioLogo"
+              unoptimized
+            />
           </div>
         </div>
       </header>
