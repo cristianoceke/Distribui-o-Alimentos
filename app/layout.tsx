@@ -21,7 +21,7 @@ const resolvedAppUrl =
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000");
 
-const ogImageUrl = new URL("/logo.png", resolvedAppUrl).toString();
+const ogImageUrl = new URL("/opengraph-image", resolvedAppUrl).toString();
 
 export const metadata: Metadata = {
   metadataBase: new URL(resolvedAppUrl),
@@ -37,8 +37,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: ogImageUrl,
-        width: 1536,
-        height: 1024,
+        width: 1200,
+        height: 630,
         alt: "Logo do Sistema de Alimentação Escolar",
       },
     ],
