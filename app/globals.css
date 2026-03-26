@@ -424,7 +424,7 @@ textarea {
 
 @media (max-width: 560px) {
   :root {
-    --topbar-height: 76px;
+    --topbar-height: 92px;
     --sidebar-width: 270px;
     --page-padding-x: 16px;
     --page-padding-bottom: 24px;
@@ -464,11 +464,12 @@ textarea {
   }
 
   .topbar__content {
+    min-height: 100%;
     padding: 0 max(var(--page-padding-x), env(safe-area-inset-right)) 0
       max(10px, env(safe-area-inset-left));
   }
 
   .page-content {
-    padding-top: calc(28px + env(safe-area-inset-top));
+    padding-top: calc(20px + env(safe-area-inset-top));
   }
 }
